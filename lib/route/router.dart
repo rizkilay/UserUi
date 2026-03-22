@@ -45,6 +45,10 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(
         builder: (context) => const CartScreen(),
       );
+    case ordersScreenRoute:
+      return MaterialPageRoute(
+        builder: (context) => const OrdersScreen(),
+      );
     default:
       return MaterialPageRoute(
         builder: (context) => const EntryPoint(),
