@@ -155,7 +155,8 @@ class OrdersScreen extends StatelessWidget {
 
   // --- Filtres en bas du conteneur ---
   Widget _buildFilterTabs() {
-    return Padding(
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
@@ -170,26 +171,29 @@ class OrdersScreen extends StatelessWidget {
   }
 
   Widget _filterCard(String label, {bool isSelected = false, IconData? icon}) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1E63EE) : const Color(0xFFF4F6F8),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Column(
-          children: [
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.white : Colors.black54,
-              ),
-            ),
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: isSelected ? const Color(0xFF1E63EE) : const Color(0xFFF4F6F8),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (isSelected) ...[
+            const Icon(Icons.circle, size: 8, color: Colors.orange),
+            const SizedBox(width: 6),
           ],
-        ),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: isSelected ? Colors.white : Colors.black54,
+            ),
+          ),
+        ],
       ),
     );
   }
