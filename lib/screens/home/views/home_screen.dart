@@ -35,7 +35,6 @@ class _HomeScreenState extends State<HomeScreen> {
               _buildTopCards(),
               const SizedBox(height: defaultPadding),
 
-              // Card activité avec sous-titre
               _cardWrapper(
                 "Activité",
                 300,
@@ -119,7 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 🔥 Wrapper amélioré avec subtitle
+  // 🔥 CARD AVEC TITRE + SOUS-TITRE CENTRÉS
   Widget _cardWrapper(String title, double height, Widget child, {String? subtitle}) {
     return Container(
       height: height,
@@ -136,40 +135,44 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+          // 🔥 TITRE CENTRÉ
+          Center(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
             ),
           ),
-          const SizedBox(height: defaultPadding),
 
-          Expanded(child: child),
-
-          // 👇 Sous-titre
+          // 🔥 SOUS-TITRE CENTRÉ
           if (subtitle != null) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Center(
               child: Text(
                 subtitle,
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
                 ),
               ),
             ),
           ],
+
+          const SizedBox(height: defaultPadding),
+
+          // 🔥 GRAPH
+          Expanded(child: child),
         ],
       ),
     );
   }
 
   Widget _buildBarChart() {
-    final maxYValue = (monthlySales > totalExpenses ? monthlySales : totalExpenses);
+    final maxYValue =
+        (monthlySales > totalExpenses ? monthlySales : totalExpenses);
     final axisMax = maxYValue > 0 ? maxYValue * 1.4 : 100.0;
 
     return BarChart(
@@ -199,14 +202,20 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         barGroups: [
-          _makeGroup(0, todaySales, darkBlue, _selectedBarIndex == 0, axisMax),
-          _makeGroup(1, monthlySales, primaryYellow, _selectedBarIndex == 1, axisMax),
-          _makeGroup(2, totalExpenses, accentRed, _selectedBarIndex == 2, axisMax),
+          _makeGroup(0, todaySales, darkBlue,
+              _selectedBarIndex == 0, axisMax),
+          _makeGroup(1, monthlySales, primaryYellow,
+              _selectedBarIndex == 1, axisMax),
+          _makeGroup(2, totalExpenses, accentRed,
+              _selectedBarIndex == 2, axisMax),
         ],
         titlesData: FlTitlesData(
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          leftTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          topTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -233,12 +242,14 @@ class _HomeScreenState extends State<HomeScreen> {
                     padding: const EdgeInsets.only(top: 12.0),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 250),
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 2),
                       decoration: BoxDecoration(
                         color: isSelected ? darkBlue : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: isSelected ? darkBlue : Colors.grey[300]!,
+                          color:
+                              isSelected ? darkBlue : Colors.grey[300]!,
                         ),
                       ),
                       child: Row(
@@ -247,7 +258,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           Icon(
                             icons[idx],
                             size: 12,
-                            color: isSelected ? primaryYellow : Colors.grey,
+                            color: isSelected
+                                ? primaryYellow
+                                : Colors.grey,
                           ),
                           const SizedBox(width: 4),
                           Text(
@@ -255,7 +268,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: isSelected ? Colors.white : Colors.black87,
+                              color: isSelected
+                                  ? Colors.white
+                                  : Colors.black87,
                             ),
                           ),
                         ],
