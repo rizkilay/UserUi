@@ -17,8 +17,8 @@ class _EntryPointState extends State<EntryPoint> {
     DiscoverScreen(),
     BookmarkScreen(),
     // EmptyCartScreen(), // if Cart is empty
-    CartScreen(),
-    ProfileScreen(),
+    const CotisationScreen(),
+    const ProfileScreen(),
   ];
   int _currentIndex = 0;
 
@@ -59,18 +59,6 @@ class _EntryPointState extends State<EntryPoint> {
             },
             icon: SvgPicture.asset(
               "assets/icons/Search.svg",
-              height: 24,
-              colorFilter: ColorFilter.mode(
-                  Theme.of(context).textTheme.bodyLarge!.color!,
-                  BlendMode.srcIn),
-            ),
-          ),
-          IconButton(
-            onPressed: () {
-              Navigator.pushNamed(context, notificationsScreenRoute);
-            },
-            icon: SvgPicture.asset(
-              "assets/icons/Notification.svg",
               height: 24,
               colorFilter: ColorFilter.mode(
                   Theme.of(context).textTheme.bodyLarge!.color!,
@@ -162,25 +150,25 @@ class _EntryPointState extends State<EntryPoint> {
           unselectedItemColor: Colors.transparent,
           items: [
             BottomNavigationBarItem(
-              icon: svgIcon("assets/icons/Shop.svg"),
-              activeIcon: svgIcon("assets/icons/Shop.svg", color: primaryColor),
-              label: "Produits",
+              icon: svgIcon("assets/icons/Category.svg"),
+              activeIcon: svgIcon("assets/icons/Category.svg", color: primaryColor),
+              label: "Aperçu",
             ),
             BottomNavigationBarItem(
-              icon: svgIcon("assets/icons/Category.svg"),
+              icon: svgIcon("assets/icons/Order.svg"),
               activeIcon:
-                  svgIcon("assets/icons/Category.svg", color: primaryColor),
+                  svgIcon("assets/icons/Order.svg", color: primaryColor),
               label: "Reçus",
             ),
             BottomNavigationBarItem(
-              icon: svgIcon("assets/icons/Bookmark.svg"),
+              icon: svgIcon("assets/icons/Wallet.svg"),
               activeIcon:
-                  svgIcon("assets/icons/Bookmark.svg", color: primaryColor),
+                  svgIcon("assets/icons/Wallet.svg", color: primaryColor),
               label: "Dépenses",
             ),
             BottomNavigationBarItem(
-              icon: svgIcon("assets/icons/Bag.svg"),
-              activeIcon: svgIcon("assets/icons/Bag.svg", color: primaryColor),
+              icon: svgIcon("assets/icons/Cash.svg"),
+              activeIcon: svgIcon("assets/icons/Cash.svg", color: primaryColor),
               label: "Cotisations",
             ),
             BottomNavigationBarItem(

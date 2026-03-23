@@ -41,9 +41,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(
         builder: (context) => const NotificationsScreen(),
       );
-    case cartScreenRoute:
+    case cotisationScreenRoute:
       return MaterialPageRoute(
-        builder: (context) => const CartScreen(),
+        builder: (context) => const CotisationScreen(),
       );
     case ordersScreenRoute:
       return MaterialPageRoute(
