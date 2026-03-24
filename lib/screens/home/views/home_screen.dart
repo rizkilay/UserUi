@@ -22,6 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final Color darkBlue = const Color(0xFF1E3A8A);
   final Color primaryYellow = const Color(0xFFFACC15);
   final Color accentRed = const Color(0xFFEF4444);
+  final Color primaryOrange = const Color(0xFFF97316);
 
   @override
   Widget build(BuildContext context) {
@@ -200,7 +201,7 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
         barGroups: [
           _makeGroup(0, todaySales, darkBlue,
               _selectedBarIndex == 0, axisMax),
-          _makeGroup(1, monthlySales, primaryYellow,
+          _makeGroup(1, monthlySales, primaryOrange,
               _selectedBarIndex == 1, axisMax),
           _makeGroup(2, totalExpenses, accentRed,
               _selectedBarIndex == 2, axisMax),
@@ -292,7 +293,7 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
         BarChartRodData(
           toY: y,
           color: color,
-          width: 18,
+          width: 20,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
           backDrawRodData: BackgroundBarChartRodData(
             show: true,

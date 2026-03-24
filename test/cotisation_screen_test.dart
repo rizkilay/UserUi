@@ -6,10 +6,10 @@ void main() {
   testWidgets('CotisationScreen displays statistics and transactions', (WidgetTester tester) async {
     await tester.pumpWidget(const MaterialApp(home: CotisationScreen()));
 
-    expect(find.text('Statistiques'), findsOneWidget);
-    expect(find.text('Transactions totales'), findsOneWidget);
-    expect(find.text('1 050 550 Fcfa'), findsOneWidget);
-    expect(find.text('Mes transactions'), findsOneWidget);
-    expect(find.text('payer'), findsOneWidget);
+    expect(find.text('Aperçu'), findsOneWidget);
+    expect(find.text('Montant disponible'), findsOneWidget);
+    expect(find.text('1 050 Fcfa'), findsOneWidget);
+    expect(find.text('Transactions'), findsOneWidget);
+    expect(find.text('Retirer'), findsOneWidget);
   });
 }
