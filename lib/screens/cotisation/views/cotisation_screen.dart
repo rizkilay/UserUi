@@ -48,20 +48,16 @@ class CotisationScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // --- Section Statistiques ---
-            const Text(
-              "Statistiques",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF444444),
-              ),
+            Text(
+              "Aperçu",
+              style: Theme.of(context).textTheme.titleSmall,
             ),
             const SizedBox(height: 12),
             Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                width: 230,
-                padding: const EdgeInsets.all(20),
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -107,7 +103,7 @@ class CotisationScreen extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _buildMiniStatCard(
-                    "En provenance de mes financeurs",
+                    "En provenance deq financeurs",
                     "300 050",
                     const Color(0xFFFFCC00),
                   ),
@@ -121,7 +117,7 @@ class CotisationScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                  Text(
-                  "Mes transactions",
+                  "Transactions",
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 Icon(Icons.receipt_long, color: Colors.grey[400]),
