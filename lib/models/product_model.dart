@@ -7,6 +7,9 @@ class ProductModel {
   final double price;
   final double? priceAfetDiscount;
   final int? dicountpercent;
+  final int? quantity;
+  final String? category;
+  final String? description;
 
   ProductModel({
     required this.id,
@@ -16,18 +19,46 @@ class ProductModel {
     required this.price,
     this.priceAfetDiscount,
     this.dicountpercent,
+    this.quantity,
+    this.category,
+    this.description,
   });
 
+  /// From backend API or SQLite DB map
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
-      id: json['id'],
-      image: json['image'] ?? "",
-      brandName: json['brandName'] ?? "boutique-app",
+      id: json['id'] is int ? json['id'] : int.parse(json['id'].toString()),
+      // backend returns 'image', DB stores 'image_path'
+      image: json['image'] ?? json['image_path'] ?? "",
+      brandName: json['brandName'] ?? json['brand_name'] ?? "boutique-app",
       title: json['name'] ?? "",
-      price: double.parse(json['price'].toString()),
-      priceAfetDiscount: json['priceAfetDiscount'] != null ? double.parse(json['priceAfetDiscount'].toString()) : null,
-      dicountpercent: json['dicountpercent'] != null ? int.parse(json['dicountpercent'].toString()) : null,
+      price: double.parse((json['price'] ?? 0).toString()),
+      priceAfetDiscount: json['priceAfetDiscount'] != null
+          ? double.parse(json['priceAfetDiscount'].toString())
+          : null,
+      dicountpercent: json['dicountpercent'] != null
+          ? int.parse(json['dicountpercent'].toString())
+          : null,
+      quantity: json['quantity'] != null
+          ? int.parse(json['quantity'].toString())
+          : null,
+      category: json['category'],
+      description: json['description'],
     );
+  }
+
+  /// For SQLite insertion
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': title,
+      'category': category ?? '',
+      'price': price,
+      'quantity': quantity ?? 0,
+      'image_path': image,
+      'brandName': brandName,
+      'description': description ?? '',
+    };
   }
 }
 

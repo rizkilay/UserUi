@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/route/screen_export.dart';
+import 'package:shop/services/sync_service.dart';
 
 class EntryPoint extends StatefulWidget {
   const EntryPoint({super.key});
@@ -21,6 +22,19 @@ class _EntryPointState extends State<EntryPoint> {
     const ProfileScreen(),
   ];
   int _currentIndex = 0;
+  bool _syncing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _syncOnStartup();
+  }
+
+  Future<void> _syncOnStartup() async {
+    setState(() => _syncing = true);
+    await SyncService.instance.fetchAndSyncProducts();
+    if (mounted) setState(() => _syncing = false);
+  }
 
   @override
   Widget build(BuildContext context) {

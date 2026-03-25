@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -26,19 +25,85 @@ class DatabaseHelper {
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    // Produits (synchrisés depuis boutique-app via backend)
     await db.execute('''
       CREATE TABLE products (
         id INTEGER PRIMARY KEY,
         name TEXT,
         category TEXT,
         price REAL,
-        quantity INTEGER,
+        quantity INTEGER DEFAULT 0,
         image_path TEXT,
         brandName TEXT,
         description TEXT
       )
     ''');
-    
-    // You can add more tables if needed, matching boutique-app
+
+    // Dépenses
+    await db.execute('''
+      CREATE TABLE expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        reason TEXT,
+        amount REAL,
+        category TEXT,
+        datetime TEXT,
+        description TEXT,
+        is_validated INTEGER DEFAULT 0,
+        source TEXT DEFAULT 'caisse',
+        financeur_id TEXT
+      )
+    ''');
+
+    // Cotisations
+    await db.execute('''
+      CREATE TABLE cotisations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        amount REAL,
+        date TEXT,
+        note TEXT,
+        source TEXT DEFAULT 'caisse',
+        category TEXT,
+        partner_id INTEGER
+      )
+    ''');
+
+    // Retraits de cotisations
+    await db.execute('''
+      CREATE TABLE cotisation_withdrawals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        cotisation_id INTEGER,
+        amount REAL,
+        date TEXT,
+        motif TEXT,
+        source TEXT
+      )
+    ''');
+
+    // Sorties stock (ventes)
+    await db.execute('''
+      CREATE TABLE stock_exits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        uuid TEXT,
+        name TEXT,
+        product_id INTEGER,
+        quantity INTEGER,
+        amount REAL,
+        client_id INTEGER,
+        created_at TEXT
+      )
+    ''');
+
+    // Partenaires / Clients
+    await db.execute('''
+      CREATE TABLE partners (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        phone TEXT,
+        email TEXT,
+        address TEXT,
+        type TEXT,
+        created_at TEXT
+      )
+    ''');
   }
 }

@@ -6,8 +6,10 @@ import 'package:shop/components/product/secondary_product_card.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/route/route_constants.dart';
+import 'package:shop/services/sync_service.dart';
 import 'package:shop/theme/input_decoration_theme.dart';
 import 'package:uuid/uuid.dart';
+
 
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
@@ -24,31 +26,46 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   void initState() {
     super.initState();
-    fetchProducts();
+    _loadLocalAndSync();
   }
 
-  Future<void> fetchProducts() async {
-    setState(() => isLoading = true);
+  Future<void> _loadLocalAndSync() async {
+    // 1. Charger immédiatement depuis la DB locale
     try {
-      final response = await http.get(Uri.parse('https://backend-boutique.vercel.app/api/products'));
-      if (response.statusCode == 200) {
-        final List<dynamic> data = json.decode(response.body);
+      final localProducts = await SyncService.instance.getLocalProducts();
+      if (mounted) {
         setState(() {
-          products = data.map((json) => ProductModel.fromJson(json)).toList();
-          isLoading = false;
+          products = localProducts;
+          isLoading = localProducts.isEmpty; // loading state only if db empty
         });
-      } else {
-        throw Exception('Failed to load products');
       }
     } catch (e) {
-      debugPrint('Error fetching products: $e');
+      debugPrint("Error loading local: $e");
+    }
+
+    // 2. Sync en arrière-plan
+    try {
+      final syncedProducts = await SyncService.instance.fetchAndSyncProducts();
       if (mounted) {
+        setState(() {
+          products = syncedProducts;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error syncing products: $e");
+      if (mounted && products.isEmpty) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de la récupération des produits: $e')),
+          const SnackBar(content: Text('Impossible de charger les produits (mode hors ligne)')),
         );
       }
     }
+  }
+
+  Future<void> fetchProducts() async {
+    // called on pull-to-refresh
+    await _loadLocalAndSync();
   }
 
   Future<void> recordSale(ProductModel product) async {
