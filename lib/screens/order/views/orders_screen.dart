@@ -1,13 +1,94 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:http/http.dart' as http;
 import 'package:shop/components/product/secondary_product_card.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/models/product_model.dart';
 import 'package:shop/route/route_constants.dart';
 import 'package:shop/theme/input_decoration_theme.dart';
+import 'package:uuid/uuid.dart';
 
-class OrdersScreen extends StatelessWidget {
+class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
+
+  @override
+  State<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+class _OrdersScreenState extends State<OrdersScreen> {
+  List<ProductModel> products = [];
+  bool isLoading = true;
+  Set<int> sentProductIds = {}; // Local track to avoid duplicate clicks in same session
+
+  @override
+  void initState() {
+    super.initState();
+    fetchProducts();
+  }
+
+  Future<void> fetchProducts() async {
+    setState(() => isLoading = true);
+    try {
+      final response = await http.get(Uri.parse('https://backend-boutique.vercel.app/api/products'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          products = data.map((json) => ProductModel.fromJson(json)).toList();
+          isLoading = false;
+        });
+      } else {
+        throw Exception('Failed to load products');
+      }
+    } catch (e) {
+      debugPrint('Error fetching products: $e');
+      if (mounted) {
+        setState(() => isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la récupération des produits: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> recordSale(ProductModel product) async {
+    final transactionId = const Uuid().v4();
+    try {
+      final response = await http.post(
+        Uri.parse('https://backend-boutique.vercel.app/api/sales'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'product_id': product.id,
+          'transaction_id': transactionId,
+          'quantity': 1,
+          'amount': product.priceAfetDiscount ?? product.price,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        setState(() {
+          sentProductIds.add(product.id);
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Vente de ${product.title} enregistrée !'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        throw Exception('Failed to record sale');
+      }
+    } catch (e) {
+      debugPrint('Error recording sale: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'enregistrement de la vente: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,34 +118,65 @@ class OrdersScreen extends StatelessWidget {
               ),
             ),
             
-            // Le reste du contenu (Liste des commandes)
+            // Le reste du contenu (Liste des commandes/produits)
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.all(defaultPadding),
-                itemCount: demoPopularProducts.length,
-                itemBuilder: (context, index) => SecondaryProductCard(
-                  image: demoPopularProducts[index].image,
-                  brandName: demoPopularProducts[index].brandName,
-                  title: demoPopularProducts[index].title,
-                  price: demoPopularProducts[index].price,
-                  priceAfetDiscount: demoPopularProducts[index].priceAfetDiscount,
-                  dicountpercent: demoPopularProducts[index].dicountpercent,
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 114),
-                    maximumSize: const Size(double.infinity, 114),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                  press: () {
-                    Navigator.pushNamed(context, productDetailsScreenRoute,
-                        arguments: index.isEven);
-                  },
-                ),
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: defaultPadding),
-              ),
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : RefreshIndicator(
+                      onRefresh: fetchProducts,
+                      child: products.isEmpty 
+                          ? const Center(child: Text("Aucun produit disponible pour la vente."))
+                          : ListView.separated(
+                              padding: const EdgeInsets.all(defaultPadding),
+                              itemCount: products.length,
+                              itemBuilder: (context, index) {
+                                final product = products[index];
+                                final isSent = sentProductIds.contains(product.id);
+                                return SecondaryProductCard(
+                                  image: product.image,
+                                  brandName: product.brandName,
+                                  title: product.title,
+                                  price: product.price,
+                                  priceAfetDiscount: product.priceAfetDiscount,
+                                  dicountpercent: product.dicountpercent,
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(double.infinity, 114),
+                                    maximumSize: const Size(double.infinity, 114),
+                                    padding: const EdgeInsets.all(8),
+                                    backgroundColor: isSent ? Colors.grey[100] : null,
+                                  ),
+                                  press: isSent ? null : () {
+                                    _showSaleConfirmation(product);
+                                  },
+                                );
+                              },
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: defaultPadding),
+                            ),
+                    ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showSaleConfirmation(ProductModel product) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirmer la vente"),
+        content: Text("Voulez-vous enregistrer la vente de ${product.title} ?"),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              recordSale(product);
+            },
+            child: const Text("Confirmer"),
+          ),
+        ],
       ),
     );
   }
@@ -84,8 +196,8 @@ class OrdersScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Commandes", style: Theme.of(context).textTheme.titleSmall,),
-                Text("5 commandes", style: TextStyle(color: Colors.grey, fontSize: 13)),
+                Text("Ventes disponibles", style: Theme.of(context).textTheme.titleSmall,),
+                Text("${products.length} produits", style: const TextStyle(color: Colors.grey, fontSize: 13)),
               ],
             ),
           ),
@@ -95,11 +207,14 @@ class OrdersScreen extends StatelessWidget {
               gradient: const LinearGradient(colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)]),
               borderRadius: BorderRadius.circular(15),
             ),
-            child: const Row(
+            child: Row(
               children: [
-                Icon(Icons.auto_awesome, color: Colors.white, size: 13),
-                SizedBox(width: 6),
-                Text("28 000", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                const Icon(Icons.auto_awesome, color: Colors.white, size: 13),
+                const SizedBox(width: 6),
+                Text(
+                  products.length > 0 ? "Prêt" : "Vide",
+                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                ),
               ],
             ),
           ),
@@ -119,7 +234,7 @@ class OrdersScreen extends StatelessWidget {
           onFieldSubmitted: (value) {},
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
-            hintText: "Rechercher une commande...",
+            hintText: "Rechercher un produit...",
             filled: false,
             isDense: true,
             contentPadding: const EdgeInsets.symmetric(
@@ -136,17 +251,6 @@ class OrdersScreen extends StatelessWidget {
                 color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
               ),
             ),
-            suffixIcon: SizedBox(
-              width: 40,
-              child: Row(
-                children: [
-                  const SizedBox(
-                    height: 22,
-                    child: VerticalDivider(width: 1),
-                  ),
-                ],
-              ),
-            ),
           ),
         ),
       ),
@@ -160,11 +264,9 @@ class OrdersScreen extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          _filterCard("Toutes (5)", isSelected: true),
+          _filterCard("Tous (${products.length})", isSelected: true),
           const SizedBox(width: 8),
-          _filterCard("Fournisseurs (3)"),
-          const SizedBox(width: 8),
-          _filterCard("Central (2)"),
+          _filterCard("Boutique App"),
         ],
       ),
     );
