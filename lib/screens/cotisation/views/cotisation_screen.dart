@@ -21,12 +21,12 @@ class CotisationScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "15 000 Fcfa / mois",
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        "15 000 Fcfa",
+                        style: TextStyle(fontWeight: FontWeight.bold,color: Color(0xFF2C3E50)),
                       ),
                       Text(
                         "Début : 11 jan",
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                        style: TextStyle(fontSize: 11, color: Color(0xFF2C3E50)),
                       ),
                     ],
                   ),
@@ -50,7 +50,7 @@ class CotisationScreen extends StatelessWidget {
     
               // --- Section Statistiques ---
               Text(
-                "Aperçu",
+                "Cotisation",
                 style: Theme.of(context).textTheme.titleSmall,
               ),
               const SizedBox(height: 12),
@@ -70,21 +70,32 @@ class CotisationScreen extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center, // Centre verticalement
                     children: [
-                      Text(
-                        "Montant disponible",
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Montant disponible",
+                            style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            "1 050 Fcfa",
+                            style: TextStyle(
+                              fontSize: 19,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xFF2C3E50),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        "1 050 Fcfa",
-                        style: TextStyle(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF2C3E50),
-                        ),
+                      const Spacer(), // Pousse l'image vers la droite
+                      Image.asset(
+                        'assets/images/assets.png',
+                        width: 50,
+                        height: 50,
                       ),
                     ],
                   ),
@@ -104,7 +115,7 @@ class CotisationScreen extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildMiniStatCard(
-                      "En provenance deq financeurs",
+                      "En provenance des financeurs",
                       "300 050",
                       const Color(0xFFFFCC00),
                     ),
@@ -118,10 +129,9 @@ class CotisationScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                    Text(
-                    "Transactions",
+                    "Détail des transactions",
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
-                  Icon(Icons.receipt_long, color: Colors.grey[400]),
                 ],
               ),
             ],

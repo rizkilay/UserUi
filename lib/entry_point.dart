@@ -15,7 +15,7 @@ class _EntryPointState extends State<EntryPoint> {
   final List _pages = const [
     HomeScreen(),
     DiscoverScreen(),
-    BookmarkScreen(),
+    const DepenseScreen(),
     // EmptyCartScreen(), // if Cart is empty
     const CotisationScreen(),
     const ProfileScreen(),

@@ -25,9 +25,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(
         builder: (context) => const SearchScreen(),
       );
-    case bookmarkScreenRoute:
+    case depenseScreenRoute:
       return MaterialPageRoute(
-        builder: (context) => const BookmarkScreen(),
+        builder: (context) => const DepenseScreen(),
       );
     case entryPointScreenRoute:
       return MaterialPageRoute(
