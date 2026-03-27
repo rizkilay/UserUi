@@ -21,7 +21,11 @@ class OrdersScreen extends StatefulWidget {
 class _OrdersScreenState extends State<OrdersScreen> {
   List<ProductModel> products = [];
   bool isLoading = true;
-  Set<int> sentProductIds = {}; // Local track to avoid duplicate clicks in same session
+  List<ProductModel> soldProducts = [];
+
+  double _calculateTotal() {
+    return soldProducts.fold(0.0, (sum, item) => sum + (item.priceAfetDiscount ?? item.price));
+  }
 
   @override
   void initState() {
@@ -68,43 +72,78 @@ class _OrdersScreenState extends State<OrdersScreen> {
     await _loadLocalAndSync();
   }
 
-  Future<void> recordSale(ProductModel product) async {
-    final transactionId = const Uuid().v4();
-    try {
-      final response = await http.post(
-        Uri.parse('https://backend-boutique.vercel.app/api/sales'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'product_id': product.id,
-          'transaction_id': transactionId,
-          'quantity': 1,
-          'amount': product.priceAfetDiscount ?? product.price,
-        }),
+  Future<void> recordAllSales() async {
+    if (soldProducts.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aucun produit sélectionné.')),
       );
+      return;
+    }
 
-      if (response.statusCode == 200) {
-        setState(() {
-          sentProductIds.add(product.id);
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Vente de ${product.title} enregistrée !'),
-              backgroundColor: Colors.green,
-            ),
-          );
+    setState(() => isLoading = true);
+
+    int successCount = 0;
+    try {
+      for (var product in soldProducts) {
+        final transactionId = const Uuid().v4();
+        final response = await http.post(
+          Uri.parse('https://backend-boutique.vercel.app/api/sales'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'product_id': product.id,
+            'transaction_id': transactionId,
+            'quantity': 1,
+            'amount': product.priceAfetDiscount ?? product.price,
+          }),
+        );
+        if (response.statusCode == 200) {
+          successCount++;
         }
-      } else {
-        throw Exception('Failed to record sale');
+      }
+
+      if (mounted) {
+        setState(() {
+          soldProducts.clear();
+          isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$successCount vente(s) enregistrée(s) avec succès !'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
     } catch (e) {
-      debugPrint('Error recording sale: $e');
+      debugPrint('Error recording sales: $e');
       if (mounted) {
+        setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de l\'enregistrement de la vente: $e')),
+          SnackBar(content: Text('Erreur lors de l\'enregistrement : $e')),
         );
       }
     }
+  }
+
+  void _onProductClicked(ProductModel product) {
+    setState(() {
+      soldProducts.add(product);
+      // Diminuer la quantité localement
+      final idx = products.indexWhere((p) => p.id == product.id);
+      if (idx != -1) {
+        products[idx] = ProductModel(
+          id: products[idx].id,
+          image: products[idx].image,
+          brandName: products[idx].brandName,
+          title: products[idx].title,
+          price: products[idx].price,
+          priceAfetDiscount: products[idx].priceAfetDiscount,
+          dicountpercent: products[idx].dicountpercent,
+          quantity: (products[idx].quantity ?? 0) > 0 ? products[idx].quantity! - 1 : 0,
+          category: products[idx].category,
+          description: products[idx].description,
+        );
+      }
+    });
   }
 
   @override
@@ -145,28 +184,25 @@ class _OrdersScreenState extends State<OrdersScreen> {
                           ? const Center(child: Text("Aucun produit disponible pour la vente."))
                           : ListView.separated(
                               padding: const EdgeInsets.all(defaultPadding),
-                              itemCount: products.length,
-                              itemBuilder: (context, index) {
-                                final product = products[index];
-                                final isSent = sentProductIds.contains(product.id);
-                                return SecondaryProductCard(
-                                  image: product.image,
-                                  brandName: product.brandName,
-                                  title: product.title,
-                                  price: product.price,
-                                  priceAfetDiscount: product.priceAfetDiscount,
-                                  dicountpercent: product.dicountpercent,
-                                  style: OutlinedButton.styleFrom(
-                                    minimumSize: const Size(double.infinity, 114),
-                                    maximumSize: const Size(double.infinity, 114),
-                                    padding: const EdgeInsets.all(8),
-                                    backgroundColor: isSent ? Colors.grey[100] : null,
-                                  ),
-                                  press: isSent ? null : () {
-                                    _showSaleConfirmation(product);
-                                  },
-                                );
-                              },
+                                itemCount: products.length,
+                                itemBuilder: (context, index) {
+                                  final product = products[index];
+                                  return SecondaryProductCard(
+                                    image: product.image,
+                                    brandName: product.brandName,
+                                    title: product.title,
+                                    price: product.price,
+                                    priceAfetDiscount: product.priceAfetDiscount,
+                                    dicountpercent: product.dicountpercent,
+                                    quantity: product.quantity,
+                                    style: OutlinedButton.styleFrom(
+                                      minimumSize: const Size(double.infinity, 114),
+                                      maximumSize: const Size(double.infinity, 114),
+                                      padding: const EdgeInsets.all(8),
+                                    ),
+                                    press: () => _onProductClicked(product),
+                                  );
+                                },
                               separatorBuilder: (context, index) =>
                                   const SizedBox(height: defaultPadding),
                             ),
@@ -178,25 +214,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  void _showSaleConfirmation(ProductModel product) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Confirmer la vente"),
-        content: Text("Voulez-vous enregistrer la vente de ${product.title} ?"),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              recordSale(product);
-            },
-            child: const Text("Confirmer"),
-          ),
-        ],
-      ),
-    );
-  }
+  // Confirmation Removed
 
   // --- Header identique avec le bouton dégradé ---
   Widget _buildHeader(BuildContext context) {
@@ -213,8 +231,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Ventes disponibles", style: Theme.of(context).textTheme.titleSmall,),
-                Text("${products.length} produits", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                Text("Commandes", style: Theme.of(context).textTheme.titleSmall,),
+                Text("${soldProducts.length} produits", style: const TextStyle(color: Colors.grey, fontSize: 13)),
               ],
             ),
           ),
@@ -226,10 +244,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.auto_awesome, color: Colors.white, size: 13),
-                const SizedBox(width: 6),
                 Text(
-                  products.length > 0 ? "Prêt" : "Vide",
+                  soldProducts.isNotEmpty ? "${_calculateTotal().toStringAsFixed(0)} F" : "0 F",
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -274,33 +290,52 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  // --- Filtres en bas du conteneur ---
-  Widget _buildFilterTabs() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+Widget _buildFilterTabs() {
+  return SingleChildScrollView(
+    padding: const EdgeInsets.symmetric(horizontal: 16),
+    child: SizedBox(
+      width: MediaQuery.of(context).size.width, 
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end, 
         children: [
-          _filterCard("Tous (${products.length})", isSelected: true),
+          _filterCard("Détails", isBlue: true, icon: Icons.edit),
           const SizedBox(width: 8),
-          _filterCard("Boutique App"),
+          GestureDetector(
+            onTap: soldProducts.isNotEmpty ? recordAllSales : null,
+            child: _filterCard(
+              "Enregistrer",
+              isGreen: soldProducts.isNotEmpty,
+            ),
+          ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _filterCard(String label, {bool isSelected = false, IconData? icon}) {
+  Widget _filterCard(String label, {bool isBlue = false, bool isGreen = false, IconData? icon}) {
+    Color bgColor = const Color(0xFFF4F6F8);
+    Color textColor = Colors.black54;
+
+    if (isGreen) {
+      bgColor = Colors.green;
+      textColor = Colors.white;
+    } else if (isBlue) {
+      bgColor = const Color(0xFF1E63EE);
+      textColor = Colors.white;
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: BoxDecoration(
-        color: isSelected ? const Color(0xFF1E63EE) : const Color(0xFFF4F6F8),
+        color: bgColor,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (isSelected) ...[
-            const Icon(Icons.circle, size: 8, color: Colors.orange),
+          if (icon != null) ...[
+            Icon(icon, size: 14, color: textColor),
             const SizedBox(width: 6),
           ],
           Text(
@@ -309,7 +344,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
-              color: isSelected ? Colors.white : Colors.black54,
+              color: textColor,
             ),
           ),
         ],
