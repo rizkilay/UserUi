@@ -146,6 +146,29 @@ class _OrdersScreenState extends State<OrdersScreen> {
     });
   }
 
+  void _cancelSelection() {
+    setState(() {
+      for (var soldItem in soldProducts) {
+        final idx = products.indexWhere((p) => p.id == soldItem.id);
+        if (idx != -1) {
+          products[idx] = ProductModel(
+            id: products[idx].id,
+            image: products[idx].image,
+            brandName: products[idx].brandName,
+            title: products[idx].title,
+            price: products[idx].price,
+            priceAfetDiscount: products[idx].priceAfetDiscount,
+            dicountpercent: products[idx].dicountpercent,
+            quantity: (products[idx].quantity ?? 0) + 1,
+            category: products[idx].category,
+            description: products[idx].description,
+          );
+        }
+      }
+      soldProducts.clear();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -169,7 +192,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                 children: [
                   _buildHeader(context),
                   _buildSearchBar(context),
-                  _buildFilterTabs(),
+                  _buildActionButtons(),
                 ],
               ),
             ),
@@ -290,29 +313,232 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-Widget _buildFilterTabs() {
-  return SingleChildScrollView(
-    padding: const EdgeInsets.symmetric(horizontal: 16),
-    child: SizedBox(
-      width: MediaQuery.of(context).size.width, 
+  Widget _buildActionButtons() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.end, 
         children: [
-          _filterCard("Détails", isBlue: true, icon: Icons.edit),
-          const SizedBox(width: 8),
-          GestureDetector(
-            onTap: soldProducts.isNotEmpty ? recordAllSales : null,
-            child: _filterCard(
-              "Enregistrer",
-              isGreen: soldProducts.isNotEmpty,
+          _infoTag("${soldProducts.length} sélectionné(s)", Icons.shopping_bag_outlined),
+          const Spacer(),
+          if (soldProducts.isNotEmpty)
+            Row(
+              children: [
+                GestureDetector(
+                  onTap: _cancelSelection,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    ),
+                    child: const Icon(Icons.close, color: Colors.red, size: 20),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _showOrderSummaryModal(context),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF10B981),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: const Text(
+                      "Encaisser",
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          else
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text(
+                "Encaisser",
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
             ),
-          ),
         ],
       ),
+    );
+  }
+
+  Widget _infoTag(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEEF2FF),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF4F46E5)),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.w600, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+  void _showOrderSummaryModal(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
+    builder: (context) {
+      return Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+          left: 16,
+          right: 16,
+          top: 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            /// =========================
+            /// ORDER SUMMARY CARD
+            /// =========================
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.grey.withOpacity(0.3),
+                  width: 1.2,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Résumé de la commande",
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  /// Subtotal
+                  _summaryRow(
+                    "Subtotal",
+                    "${_calculateTotal().toStringAsFixed(0)} F",
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// Shipping
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: const [
+                      Text(
+                        "Shipping Fee",
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      Text(
+                        "Free",
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: Colors.green,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  /// Discount (exemple fixe)
+                  _summaryRow("Discount", "0 F"),
+
+                  const SizedBox(height: 16),
+
+                  Divider(color: Colors.grey.withOpacity(0.4)),
+
+                  const SizedBox(height: 16),
+
+                  /// Total
+                  _summaryRow(
+                    "À payer",
+                    "${_calculateTotal().toStringAsFixed(0)} F",
+                    isBold: true,
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  /// VAT (exemple)
+                  _summaryRow("Estimated VAT", "0 F"),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            /// =========================
+            /// BOUTON CONTINUE (GRADIENT)
+            /// =========================
+            Container(
+              width: double.infinity,
+              height: 55,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: const LinearGradient(
+                  colors: [
+                    Color(0xFF7F5AF0),
+                    Color(0xFF5F6BFF),
+                  ],
+                ),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () {
+                    Navigator.pop(context);
+                    recordAllSales();
+                  },
+                  child: const Center(
+                    child: Text(
+                      "Continue",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+          ],
+        ),
+      );
+    },
   );
 }
-
   Widget _filterCard(String label, {bool isBlue = false, bool isGreen = false, IconData? icon}) {
     Color bgColor = const Color(0xFFF4F6F8);
     Color textColor = Colors.black54;
@@ -351,4 +577,28 @@ Widget _buildFilterTabs() {
       ),
     );
   }
+
+  Widget _summaryRow(String title, String value, {bool isBold = false}) {
+  return Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(
+        title,
+        style: TextStyle(
+          fontSize: 13,
+          color: Colors.grey,
+          fontWeight: isBold ? FontWeight.w500 : FontWeight.w400,
+        ),
+      ),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 14,
+          color: Colors.black,
+          fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+        ),
+      ),
+    ],
+  );
+}
 }
