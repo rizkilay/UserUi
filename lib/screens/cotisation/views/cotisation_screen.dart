@@ -208,7 +208,7 @@ floatingActionButton: SizedBox(
                           child: const Icon(Icons.download, color: Color(0xFFF2A945)),
                         ),
                         title: Text(
-                          cotisation.source.toUpperCase(),
+                          cotisation.source,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                         subtitle: Text(

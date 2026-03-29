@@ -25,8 +25,8 @@ class CustomInputField extends StatelessWidget {
       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
       decoration: InputDecoration(
         prefixIcon: Icon(icon, color: const Color(0xff193948), size: 22),
-        labelText: hint,
-        labelStyle: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.w500),
+        hintText: hint,
+        hintStyle: TextStyle(color: Colors.grey[600], fontWeight: FontWeight.normal),
         filled: true,
         fillColor: Colors.grey[50], // Lighter elegant background
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),

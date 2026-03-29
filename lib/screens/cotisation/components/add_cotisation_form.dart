@@ -174,14 +174,6 @@ class _AddCotisationFormState extends State<AddCotisationForm> {
               _buildDatePicker(),
 
               const SizedBox(height: 15),
-              _buildSectionLabel("Détails de l'opération (Catégorie)"),
-              CustomInputField(
-                controller: _categoryController,
-                icon: Icons.inventory_2_outlined,
-                hint: "Catégorie",
-              ),
-
-              const SizedBox(height: 15),
               _buildSectionLabel("Motif ou Note"),
               TextField(
                 controller: _noteController,
@@ -217,7 +209,7 @@ class _AddCotisationFormState extends State<AddCotisationForm> {
                   child: _isLoading 
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text(
-                        "VALIDER",
+                        "ENREGISTRER",
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                 ),
@@ -233,12 +225,12 @@ class _AddCotisationFormState extends State<AddCotisationForm> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 2),
       child: Text(
-        label.toUpperCase(),
+        label,
         style: TextStyle(
           fontSize: 11,
-          letterSpacing: 1.2,
+          letterSpacing: 1,
           fontWeight: FontWeight.bold,
-          color: Colors.grey[600],
+          color: primaryColor,
         ),
       ),
     );

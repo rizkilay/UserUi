@@ -203,7 +203,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
               CustomInputField(
                 controller: _amountController,
                 icon: Icons.account_balance_wallet_outlined,
-                hint: "Montant (FCFA)",
+                hint: "Montant",
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 15),
@@ -257,12 +257,12 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
 
               const SizedBox(height: 15),
 
-              _buildSectionLabel("Description (optionnelle)"),
+              _buildSectionLabel("Motif ou Note"),
               TextField(
                 controller: _descriptionController,
                 maxLines: 2,
                 decoration: InputDecoration(
-                  hintText: "Détails supplémentaires...",
+                  hintText: "Détails...",
                   filled: true,
                   fillColor: Colors.grey[50],
                   enabledBorder: OutlineInputBorder(
@@ -309,12 +309,12 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 2),
       child: Text(
-        label.toUpperCase(),
+        label,
         style: TextStyle(
           fontSize: 11,
-          letterSpacing: 1.2,
+          letterSpacing: 1,
           fontWeight: FontWeight.bold,
-          color: Colors.grey[600],
+          color: primaryColor,
         ),
       ),
     );
