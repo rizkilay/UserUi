@@ -313,20 +313,27 @@ class _OrdersScreenState extends State<OrdersScreen> {
     );
   }
 
-  Widget _buildActionButtons() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
-      child: Row(
-        children: [
-          _infoTag("${soldProducts.length} sélectionné(s)", Icons.shopping_bag_outlined),
-          const Spacer(),
-          if (soldProducts.isNotEmpty)
-            Row(
-              children: [
-                GestureDetector(
+Widget _buildActionButtons() {
+  bool hasItems = soldProducts.isNotEmpty;
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
+    child: Row(
+      children: [
+        _infoTag("${soldProducts.length} Article(s)", Icons.shopping_bag_outlined),
+        const Spacer(),
+        
+        // Animation de l'apparition du bouton d'annulation
+        AnimatedOpacity(
+          duration: const Duration(milliseconds: 300),
+          opacity: hasItems ? 1.0 : 0.0,
+          child: hasItems 
+            ? Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: GestureDetector(
                   onTap: _cancelSelection,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
                       color: Colors.red.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
@@ -335,47 +342,46 @@ class _OrdersScreenState extends State<OrdersScreen> {
                     child: const Icon(Icons.close, color: Colors.red, size: 20),
                   ),
                 ),
-                const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: () => _showOrderSummaryModal(context),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981),
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF10B981).withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: const Text(
-                      "Encaisser",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+              )
+            : const SizedBox.shrink(),
+        ),
+
+        // Bouton Encaisser avec AnimatedContainer
+        GestureDetector(
+          onTap: hasItems ? () => _showOrderSummaryModal(context) : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 350),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+            decoration: BoxDecoration(
+              // La couleur change de gris à vert selon l'état
+              color: hasItems ? const Color(0xFF10B981) : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  // L'ombre s'anime aussi (devient transparente si inactif)
+                  color: hasItems 
+                      ? const Color(0xFF10B981).withOpacity(0.3) 
+                      : Colors.transparent,
+                  blurRadius: hasItems ? 8 : 0,
+                  offset: hasItems ? const Offset(0, 3) : Offset.zero,
                 ),
               ],
-            )
-          else
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                "Encaisser",
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            child: const Text(
+              "Encaisser",
+              style: TextStyle(
+                color: Colors.white, 
+                fontWeight: FontWeight.bold, 
+                fontSize: 12,
               ),
             ),
-        ],
-      ),
-    );
-  }
-
+          ),
+        ),
+      ],
+    ),
+  );
+}
   Widget _infoTag(String label, IconData icon) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

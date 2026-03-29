@@ -1,12 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shop/constants.dart';
+import '../../bookmark/components/add_expense_form.dart';
+import '../../../database/expense_dao.dart';
+import '../../../models/expense.dart';
 
-class DepenseScreen extends StatelessWidget {
+class DepenseScreen extends StatefulWidget {
   const DepenseScreen({super.key});
+
+  @override
+  State<DepenseScreen> createState() => _DepenseScreenState();
+}
+
+class _DepenseScreenState extends State<DepenseScreen> {
+  final ExpenseDao _expenseDao = ExpenseDao();
+
+  void _showAddExpenseForm() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return AddExpenseForm(
+          onSuccess: () {
+            Navigator.pop(context);
+            // Refresh logic here
+            setState(() {});
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+floatingActionButton: SizedBox(
+  height: 45, // Réduit la hauteur
+  child: FloatingActionButton.extended(
+    onPressed: _showAddExpenseForm,
+    backgroundColor: const Color(0xFF3377B0),
+    icon: const Icon(Icons.add, color: Colors.white, size: 20),
+    label: const Text(
+      "Ajouter", 
+      style: TextStyle(color: Colors.white, fontSize: 13) // Texte plus petit
+    ),
+  ),
+),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(defaultPadding),
@@ -119,6 +159,59 @@ class DepenseScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              FutureBuilder<List<Expense>>(
+                future: _expenseDao.getAll(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Text("Erreur : ${snapshot.error}");
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text("Aucune dépense enregistrée.", style: TextStyle(color: Colors.grey)),
+                    );
+                  }
+
+                  final expenses = snapshot.data!;
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: expenses.length,
+                    separatorBuilder: (context, index) => const Divider(),
+                    itemBuilder: (context, index) {
+                      final expense = expenses[index];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF3377B0).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.outbound, color: Color(0xFF3377B0)),
+                        ),
+                        title: Text(
+                          expense.reason,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          DateFormat('dd MMM yyyy', 'fr_FR').format(expense.dateTime) + 
+                          (expense.description != null ? ' - ${expense.description}' : ''),
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Text(
+                          "- ${expense.amount} Fcfa",
+                          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ],
           ),

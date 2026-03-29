@@ -1,12 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shop/constants.dart';
+import '../components/add_cotisation_form.dart';
+import '../../../database/cotisation_dao.dart';
+import '../../../models/cotisation.dart';
 
-class CotisationScreen extends StatelessWidget {
+class CotisationScreen extends StatefulWidget {
   const CotisationScreen({super.key});
+
+  @override
+  State<CotisationScreen> createState() => _CotisationScreenState();
+}
+
+class _CotisationScreenState extends State<CotisationScreen> {
+  final CotisationDao _cotisationDao = CotisationDao();
+
+  void _showAddCotisationForm() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return AddCotisationForm(
+          onSuccess: () {
+            Navigator.pop(context);
+            // Refresh data here if needed
+            setState(() {});
+          },
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+floatingActionButton: SizedBox(
+  height: 45, // Réduit la hauteur
+  child: FloatingActionButton.extended(
+    onPressed: _showAddCotisationForm,
+    backgroundColor: const Color(0xFF3377B0),
+    icon: const Icon(Icons.add, color: Colors.white, size: 20),
+    label: const Text(
+      "Ajouter", 
+      style: TextStyle(color: Colors.white, fontSize: 13) // Texte plus petit
+    ),
+  ),
+),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(defaultPadding),
@@ -133,6 +173,59 @@ class CotisationScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              FutureBuilder<List<Cotisation>>(
+                future: _cotisationDao.getAll(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  } else if (snapshot.hasError) {
+                    return Text("Erreur : ${snapshot.error}");
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text("Aucune cotisation enregistrée.", style: TextStyle(color: Colors.grey)),
+                    );
+                  }
+
+                  final cotisations = snapshot.data!;
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: cotisations.length,
+                    separatorBuilder: (context, index) => const Divider(),
+                    itemBuilder: (context, index) {
+                      final cotisation = cotisations[index];
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF2A945).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.download, color: Color(0xFFF2A945)),
+                        ),
+                        title: Text(
+                          cotisation.source.toUpperCase(),
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          DateFormat('dd MMM yyyy', 'fr_FR').format(DateTime.parse(cotisation.date)) + 
+                          (cotisation.note != null ? ' - ${cotisation.note}' : ''),
+                          style: const TextStyle(fontSize: 12),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Text(
+                          "+ ${cotisation.amount} Fcfa",
+                          style: const TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ],
           ),
