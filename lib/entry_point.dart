@@ -4,6 +4,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/route/screen_export.dart';
 import 'package:shop/services/sync_service.dart';
+import 'package:shop/screens/order/views/invoices_screen.dart';
 
 class EntryPoint extends StatefulWidget {
   const EntryPoint({super.key});
@@ -15,7 +16,7 @@ class EntryPoint extends StatefulWidget {
 class _EntryPointState extends State<EntryPoint> {
   final List _pages = const [
     HomeScreen(),
-    DiscoverScreen(),
+    InvoicesScreen(),
     const DepenseScreen(),
     // EmptyCartScreen(), // if Cart is empty
     const CotisationScreen(),

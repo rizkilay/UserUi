@@ -33,4 +33,11 @@ class ProductDao {
     final db = await _dbHelper.database;
     await db.delete('products');
   }
+
+  Future<int> getOutOfStockCount() async {
+    final db = await _dbHelper.database;
+    final res = await db.rawQuery('SELECT COUNT(*) as count FROM products WHERE quantity <= 0');
+    final count = res.first['count'];
+    return (count as int?) ?? 0;
+  }
 }

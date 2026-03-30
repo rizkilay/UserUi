@@ -85,4 +85,11 @@ class ExpenseDao {
     if (v is int) return v.toDouble();
     return v as double;
   }
+
+  Future<double> getMonthlyExpenses() async {
+    final now = DateTime.now();
+    final firstDay = DateTime(now.year, now.month, 1);
+    final lastDay = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    return getTotalByDateRange(firstDay, lastDay);
+  }
 }

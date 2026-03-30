@@ -140,4 +140,20 @@ class ExitDao {
     if (v is int) return v.toDouble();
     return v as double;
   }
+
+  Future<Map<String, dynamic>?> getTopSellingProduct() async {
+    final db = await DatabaseHelper.instance.database;
+    final res = await db.rawQuery('''
+      SELECT 
+        IFNULL(p.name, exit.name) as name, 
+        SUM(exit.quantity) as total_qty
+      FROM stock_exits exit
+      LEFT JOIN products p ON p.id = exit.product_id
+      GROUP BY exit.product_id, exit.name
+      ORDER BY total_qty DESC
+      LIMIT 1
+    ''');
+    if (res.isEmpty) return null;
+    return res.first;
+  }
 }

@@ -11,6 +11,9 @@ import 'package:shop/theme/input_decoration_theme.dart';
 import 'package:uuid/uuid.dart';
 
 
+import 'package:shop/database/exit_dao.dart';
+import 'package:shop/models/stock_exit.dart';
+
 class OrdersScreen extends StatefulWidget {
   const OrdersScreen({super.key});
 
@@ -19,9 +22,12 @@ class OrdersScreen extends StatefulWidget {
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
+  final ExitDao _exitDao = ExitDao();
   List<ProductModel> products = [];
+  List<ProductModel> filteredProducts = [];
   bool isLoading = true;
   List<ProductModel> soldProducts = [];
+  final TextEditingController _searchController = TextEditingController();
 
   double _calculateTotal() {
     return soldProducts.fold(0.0, (sum, item) => sum + (item.priceAfetDiscount ?? item.price));
@@ -31,6 +37,34 @@ class _OrdersScreenState extends State<OrdersScreen> {
   void initState() {
     super.initState();
     _loadLocalAndSync();
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    _filterProducts(_searchController.text);
+  }
+
+  void _filterProducts(String query) {
+    setState(() {
+      if (query.isEmpty) {
+        filteredProducts = List.from(products);
+      } else {
+        final lowerQuery = query.toLowerCase();
+        filteredProducts = products.where((product) {
+          final title = product.title.toLowerCase();
+          final brand = product.brandName?.toLowerCase() ?? "";
+          final category = product.category?.toLowerCase() ?? "";
+          return title.contains(lowerQuery) || brand.contains(lowerQuery) || category.contains(lowerQuery);
+        }).toList();
+      }
+    });
   }
 
   Future<void> _loadLocalAndSync() async {
@@ -40,8 +74,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
       if (mounted) {
         setState(() {
           products = localProducts;
+          filteredProducts = List.from(localProducts);
           isLoading = localProducts.isEmpty; // loading state only if db empty
         });
+        _filterProducts(_searchController.text);
       }
     } catch (e) {
       debugPrint("Error loading local: $e");
@@ -53,8 +89,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
       if (mounted) {
         setState(() {
           products = syncedProducts;
+          filteredProducts = List.from(syncedProducts);
           isLoading = false;
         });
+        _filterProducts(_searchController.text);
       }
     } catch (e) {
       debugPrint("Error syncing products: $e");
@@ -84,19 +122,36 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     int successCount = 0;
     try {
+      final uuid = const Uuid().v4();
       for (var product in soldProducts) {
-        final transactionId = const Uuid().v4();
-        final response = await http.post(
-          Uri.parse('https://backend-boutique.vercel.app/api/sales'),
-          headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'product_id': product.id,
-            'transaction_id': transactionId,
-            'quantity': 1,
-            'amount': product.priceAfetDiscount ?? product.price,
-          }),
-        );
-        if (response.statusCode == 200) {
+        // Save locally
+        await _exitDao.insert(StockExit(
+          uuid: uuid,
+          name: "Client", // Default client name
+          productId: product.id,
+          productName: product.title,
+          quantity: 1,
+          amount: product.priceAfetDiscount ?? product.price,
+          createdAt: DateTime.now().toIso8601String(),
+        ));
+
+        // Save remotely
+        try {
+          await http.post(
+            Uri.parse('https://backend-boutique.vercel.app/api/sales'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'product_id': product.id,
+              'transaction_id': uuid,
+              'quantity': 1,
+              'amount': product.priceAfetDiscount ?? product.price,
+            }),
+          );
+          successCount++;
+        } catch (e) {
+          debugPrint('Remote error for sale: $e');
+          // We still increment success count if local save succeeded? 
+          // Usually, yes, since it's now in the local DB.
           successCount++;
         }
       }
@@ -112,6 +167,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
             backgroundColor: Colors.green,
           ),
         );
+        // Refresh after sales
+        await fetchProducts();
       }
     } catch (e) {
       debugPrint('Error recording sales: $e');
@@ -127,10 +184,10 @@ class _OrdersScreenState extends State<OrdersScreen> {
   void _onProductClicked(ProductModel product) {
     setState(() {
       soldProducts.add(product);
-      // Diminuer la quantité localement
+      // Diminuer la quantité localement dans les deux listes
       final idx = products.indexWhere((p) => p.id == product.id);
       if (idx != -1) {
-        products[idx] = ProductModel(
+        final updatedProduct = ProductModel(
           id: products[idx].id,
           image: products[idx].image,
           brandName: products[idx].brandName,
@@ -142,6 +199,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
           category: products[idx].category,
           description: products[idx].description,
         );
+        products[idx] = updatedProduct;
+        
+        final fIdx = filteredProducts.indexWhere((p) => p.id == product.id);
+        if (fIdx != -1) {
+          filteredProducts[fIdx] = updatedProduct;
+        }
       }
     });
   }
@@ -151,7 +214,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       for (var soldItem in soldProducts) {
         final idx = products.indexWhere((p) => p.id == soldItem.id);
         if (idx != -1) {
-          products[idx] = ProductModel(
+          final restoredProduct = ProductModel(
             id: products[idx].id,
             image: products[idx].image,
             brandName: products[idx].brandName,
@@ -163,6 +226,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
             category: products[idx].category,
             description: products[idx].description,
           );
+          products[idx] = restoredProduct;
+
+          final fIdx = filteredProducts.indexWhere((p) => p.id == soldItem.id);
+          if (fIdx != -1) {
+            filteredProducts[fIdx] = restoredProduct;
+          }
         }
       }
       soldProducts.clear();
@@ -203,13 +272,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
                   ? const Center(child: CircularProgressIndicator())
                   : RefreshIndicator(
                       onRefresh: fetchProducts,
-                      child: products.isEmpty 
-                          ? const Center(child: Text("Aucun produit disponible pour la vente."))
+                      child: filteredProducts.isEmpty 
+                          ? const Center(child: Text("Aucun produit trouvé."))
                           : ListView.separated(
                               padding: const EdgeInsets.all(defaultPadding),
-                                itemCount: products.length,
+                                itemCount: filteredProducts.length,
                                 itemBuilder: (context, index) {
-                                  final product = products[index];
+                                  final product = filteredProducts[index];
                                   return SecondaryProductCard(
                                     image: product.image,
                                     brandName: product.brandName,
@@ -285,9 +354,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Form(
         child: TextFormField(
-          onChanged: (value) {},
-          onSaved: (value) {},
-          onFieldSubmitted: (value) {},
+          controller: _searchController,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             hintText: "Rechercher un produit...",

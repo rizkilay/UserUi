@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:shop/constants.dart';
+import 'package:shop/database/exit_dao.dart';
+import 'package:shop/database/product_dao.dart';
+import 'package:shop/database/expense_dao.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,10 +16,17 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedBarIndex = -1;
 
-  // Demo metrics
-  final double todaySales = 2500.0;
-  final double monthlySales = 45000.0;
-  final double totalExpenses = 12000.0;
+  // Real metrics
+  double todaySales = 0.0;
+  double monthlySales = 0.0;
+  double totalExpenses = 0.0;
+  String topSellingProduct = "---";
+  int outOfStockCount = 0;
+  bool isLoading = true;
+
+  final ExitDao _exitDao = ExitDao();
+  final ProductDao _productDao = ProductDao();
+  final ExpenseDao _expenseDao = ExpenseDao();
 
   // Custom colors
   final Color darkBlue = const Color(0xFF1E3A8A);
@@ -25,24 +35,59 @@ class _HomeScreenState extends State<HomeScreen> {
   final Color primaryOrange = const Color(0xFFF97316);
 
   @override
+  void initState() {
+    super.initState();
+    _loadSalesData();
+  }
+
+  Future<void> _loadSalesData() async {
+    setState(() => isLoading = true);
+    try {
+      final today = await _exitDao.getTodaySales();
+      final month = await _exitDao.getMonthlySales();
+      final expenses = await _expenseDao.getMonthlyExpenses();
+      final topProduct = await _exitDao.getTopSellingProduct();
+      final outOfStock = await _productDao.getOutOfStockCount();
+
+      if (mounted) {
+        setState(() {
+          todaySales = today;
+          monthlySales = month;
+          totalExpenses = expenses;
+          topSellingProduct = topProduct != null ? topProduct['name'] : "Aucun";
+          outOfStockCount = outOfStock;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error loading sales data: $e");
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(defaultPadding),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTopCards(),
-              const SizedBox(height: defaultPadding),
+        child: RefreshIndicator(
+          onRefresh: _loadSalesData,
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(defaultPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildTopCards(),
+                const SizedBox(height: defaultPadding),
 
-              _cardWrapper(
-                "Activité",
-                300,
-                _buildBarChart(),
-                subtitle: "Ventes et dépenses",
-              ),
-            ],
+                _cardWrapper(
+                  "Activité",
+                  300,
+                  _buildBarChart(),
+                  subtitle: "Ventes et dépenses",
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -55,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: _metricCard(
             "Top des ventes",
-            "128",
+            topSellingProduct,
             Icons.trending_up,
             successColor,
           ),
@@ -64,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
         Expanded(
           child: _metricCard(
             "Stock en rupture",
-            "5",
+            outOfStockCount.toString(),
             Icons.warning_amber_rounded,
             warningColor,
           ),
@@ -99,7 +144,7 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
             children: [
               Text(
                 title.toUpperCase(),
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.black87,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
@@ -109,8 +154,10 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
               const SizedBox(height: 4),
               Text(
                 value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: value.length > 10 ? 14 : 18,
                   fontWeight: FontWeight.bold,
                   color: color,
                 ),
@@ -242,7 +289,7 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 10, vertical: 2),
                       decoration: BoxDecoration(
-                        color: isSelected ? darkBlue : Colors.white,
+                         color: isSelected ? darkBlue : Colors.white,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color:
