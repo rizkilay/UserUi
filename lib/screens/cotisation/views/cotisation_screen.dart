@@ -65,7 +65,7 @@ floatingActionButton: SizedBox(
                         style: TextStyle(fontWeight: FontWeight.bold,color: Color(0xFF2C3E50)),
                       ),
                       Text(
-                        "Début : 11 jan",
+                        "Somme totale",
                         style: TextStyle(fontSize: 11, color: Color(0xFF2C3E50)),
                       ),
                     ],
@@ -117,7 +117,7 @@ floatingActionButton: SizedBox(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "Montant disponible",
+                            "Début : 11 jan",
                             style: TextStyle(color: Colors.grey[600], fontSize: 14),
                           ),
                           const SizedBox(height: 8),
@@ -169,7 +169,7 @@ floatingActionButton: SizedBox(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                    Text(
-                    "Détail des transactions",
+                    "Détails des cotisations",
                     style: Theme.of(context).textTheme.titleSmall,
                   ),
                 ],
