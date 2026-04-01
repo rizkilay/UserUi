@@ -205,8 +205,8 @@ floatingActionButton: SizedBox(
                           overflow: TextOverflow.ellipsis,
                         ),
                         trailing: Text(
-                          "- ${expense.amount} Fcfa",
-                          style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+                          "${expense.amount} Fcfa",
+                          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
                         ),
                       );
                     },

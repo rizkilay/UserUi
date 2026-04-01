@@ -95,24 +95,28 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildTopCards() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _metricCard(
-            "Top des ventes",
-            topSellingProduct,
-            Icons.trending_up,
-            successColor,
-          ),
-        ),
-        const SizedBox(width: defaultPadding),
-        Expanded(
-          child: _metricCard(
-            "Stock en rupture",
-            outOfStockCount.toString(),
-            Icons.warning_amber_rounded,
-            warningColor,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _metricCard(
+                "Top des ventes",
+                topSellingProduct,
+                Icons.trending_up,
+                successColor,
+              ),
+            ),
+            const SizedBox(width: defaultPadding),
+            Expanded(
+              child: _metricCard(
+                "Ruptures",
+                outOfStockCount.toString(),
+                Icons.warning_amber_rounded,
+                warningColor,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -177,36 +181,62 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
       padding: const EdgeInsets.all(defaultPadding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(7),
-        border: Border.all(color:Colors.grey[300]!,),),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+      ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Center(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-
-          if (subtitle != null) ...[
-            const SizedBox(height: 4),
-            Center(
-              child: Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 4,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: primaryYellow,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          title.toUpperCase(),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 12,
+                            color: darkBlue.withOpacity(0.7),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-            ),
-          ],
-
+              const Icon(
+                Icons.insights_rounded,
+                color: Colors.black54,
+                size: 24,
+              ),
+            ],
+          ),
           const SizedBox(height: defaultPadding),
-
           // 🔥 GRAPH
           Expanded(child: child),
         ],
@@ -248,7 +278,7 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
         barGroups: [
           _makeGroup(0, todaySales, darkBlue,
               _selectedBarIndex == 0, axisMax),
-          _makeGroup(1, monthlySales, primaryOrange,
+          _makeGroup(1, monthlySales, primaryYellow,
               _selectedBarIndex == 1, axisMax),
           _makeGroup(2, totalExpenses, accentRed,
               _selectedBarIndex == 2, axisMax),
@@ -263,9 +293,9 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 40,
+              reservedSize: 80,
               getTitlesWidget: (value, meta) {
-                const titles = ['Jour', 'Mois', 'Dépenses'];
+                const titles = ['Vte Jour', 'Vte Mois', 'Dépenses'];
                 const icons = [
                   Icons.today,
                   Icons.calendar_view_month,
@@ -284,41 +314,68 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
                   },
                   child: Padding(
                     padding: const EdgeInsets.only(top: 12.0),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 2),
-                      decoration: BoxDecoration(
-                         color: isSelected ? darkBlue : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color:
-                              isSelected ? darkBlue : Colors.grey[300]!,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            icons[idx],
-                            size: 12,
-                            color: isSelected
-                                ? primaryYellow
-                                : Colors.grey,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            titles[idx],
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: isSelected
-                                  ? Colors.white
-                                  : Colors.black87,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isSelected ? darkBlue : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color:
+                                  isSelected ? darkBlue : Colors.grey[300]!,
                             ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                        color: darkBlue.withOpacity(0.2),
+                                        blurRadius: 5)
+                                  ]
+                                : [],
                           ),
-                        ],
-                      ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                icons[idx],
+                                size: 12,
+                                color: isSelected
+                                    ? primaryYellow
+                                    : Colors.grey,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                titles[idx],
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          idx == 0
+                              ? NumberFormat.compact().format(todaySales)
+                              : idx == 1
+                                  ? NumberFormat.compact().format(monthlySales)
+                                  : NumberFormat.compact().format(totalExpenses),
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            color: isSelected
+                                ? darkBlue
+                                : darkBlue.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 );
@@ -339,13 +396,13 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
       barRods: [
         BarChartRodData(
           toY: y,
-          color: color,
-          width: 20,
+          color: isTouched ? color : color.withOpacity(0.7),
+          width: isTouched ? 22 : 16,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
           backDrawRodData: BackgroundBarChartRodData(
             show: true,
             toY: axisMax,
-            color: const Color(0xFFF1F5F9),
+            color: isTouched ? color.withOpacity(0.05) : const Color(0xFFF1F5F9),
           ),
         ),
       ],
@@ -353,6 +410,11 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
   }
 
   void _executeBarAction(int index) {
-    debugPrint("Bar $index tapped");
+    if (index == 0 || index == 1) {
+      // In mobile, we just navigate to the Receipts or show a message
+      // If we are in EntryPoint, we might want to switch tabs
+    } else if (index == 2) {
+      // Logic for expenses if needed
+    }
   }
 }
