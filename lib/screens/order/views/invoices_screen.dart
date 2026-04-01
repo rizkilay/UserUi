@@ -131,7 +131,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       child: TextFormField(
         controller: _searchController,
         decoration: InputDecoration(
-          hintText: "Rechercher par ID ou client...",
+          hintText: "Recherche",
           prefixIcon: const Icon(Icons.search, size: 20),
           filled: true,
           fillColor: Colors.grey.withOpacity(0.05),
@@ -148,6 +148,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   Widget _buildInvoiceCard(BuildContext context, StockExit invoice) {
     final date = invoice.createdAt != null ? DateTime.parse(invoice.createdAt!) : DateTime.now();
     final formattedDate = DateFormat('dd MMM yyyy, HH:mm').format(date);
+    final NumberFormat formatter = NumberFormat.decimalPattern('fr_FR');
     final shortUuid = invoice.uuid.length > 8 ? invoice.uuid.substring(0, 8) : invoice.uuid;
 
     return Container(
@@ -191,25 +192,25 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
           Text(
             invoice.name.isEmpty ? "Client de passage" : invoice.name,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15 , color: Color(0xFF2C3E50)),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 7),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 "${invoice.quantity} produits",
-                style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                style: TextStyle(color:Color(0xFF2C3E50), fontSize: 13),
               ),
               Text(
-                "${invoice.amount.toStringAsFixed(0)} F",
+                "${formatter.format(invoice.amount)} Fcfa",
                 style: const TextStyle(
-                  color: successColor,
+                  color:Color(0xFF2C3E50),
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 14,
                 ),
               ),
             ],

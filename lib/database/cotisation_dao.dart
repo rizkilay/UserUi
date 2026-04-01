@@ -179,4 +179,23 @@ class CotisationDao {
     );
     return res.map((r) => CotisationWithdrawal.fromMap(r)).toList();
   }
+
+  Future<List<dynamic>> getAllTransactions() async {
+    final cotisations = await getAll();
+    final withdrawals = await getWithdrawals();
+    
+    final List<dynamic> transactions = [];
+    transactions.addAll(cotisations);
+    transactions.addAll(withdrawals);
+    
+    transactions.sort((a, b) {
+      final String dateAString = a is Cotisation ? a.date : (a as CotisationWithdrawal).date;
+      final String dateBString = b is Cotisation ? b.date : (b as CotisationWithdrawal).date;
+      final dateA = DateTime.parse(dateAString);
+      final dateB = DateTime.parse(dateBString);
+      return dateB.compareTo(dateA); // Newest first
+    });
+    
+    return transactions;
+  }
 }

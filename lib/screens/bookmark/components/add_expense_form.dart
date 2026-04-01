@@ -244,7 +244,12 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
                       onSelected: (val) => setState(() => _selectedCategory = category),
                       selectedColor: primaryColor,
                       backgroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
                       labelStyle: TextStyle(
+                        fontSize: 12,
                         color: isSelected ? Colors.white : primaryColor,
                       ),
                       shape: RoundedRectangleBorder(

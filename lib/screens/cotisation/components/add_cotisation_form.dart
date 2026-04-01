@@ -72,7 +72,7 @@ class _AddCotisationFormState extends State<AddCotisationForm> {
         String finalNote = note;
         if (_source == 'partner') {
            final partnerName = _partnerNameController.text.trim();
-           finalNote = "Financier: $partnerName ${note.isNotEmpty ? ' - $note' : ''}";
+           finalNote = 'Financier: $partnerName' + (note.isNotEmpty ? ' - $note' : '');
         }
 
         final cotisation = Cotisation(
@@ -160,15 +160,25 @@ class _AddCotisationFormState extends State<AddCotisationForm> {
               _buildSectionLabel("Source"),
               _buildSourceSelector(),
 
-              if (_source == 'partner') ...[
-                const SizedBox(height: 15),
-                _buildSectionLabel("Nom du financier"),
-                CustomInputField(
-                  controller: _partnerNameController,
-                  icon: Icons.person_outline,
-                  hint: "Nom du financier",
-                ),
-              ],
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: _source == 'partner'
+                    ? Column(
+                        key: const ValueKey('partner_field'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 15),
+                          _buildSectionLabel("Nom du financier"),
+                          CustomInputField(
+                            controller: _partnerNameController,
+                            icon: Icons.person_outline,
+                            hint: "Nom du financier",
+                          ),
+                        ],
+                      )
+                    : const SizedBox(key: ValueKey('empty_field')),
+              ),
 
               const SizedBox(height: 15),
               _buildDatePicker(),
@@ -250,7 +260,7 @@ class _AddCotisationFormState extends State<AddCotisationForm> {
             child: GestureDetector(
               onTap: () => setState(() => _source = type),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
+                duration: const Duration(milliseconds: 400),
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 decoration: BoxDecoration(
                   color: isSelected ? primaryColor : Colors.transparent,

@@ -244,151 +244,172 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
     );
   }
 
-  Widget _buildBarChart() {
-    final maxYValue =
-        (monthlySales > totalExpenses ? monthlySales : totalExpenses);
-    final axisMax = maxYValue > 0 ? maxYValue * 1.4 : 100.0;
+Widget _buildBarChart() {
+  final maxYValue =
+      (monthlySales > totalExpenses ? monthlySales : totalExpenses);
+  final axisMax = maxYValue > 0 ? maxYValue * 1.4 : 100.0;
 
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: axisMax,
-        barTouchData: BarTouchData(
-          enabled: true,
-          touchCallback: (event, response) {
-            if (event is FlTapUpEvent && response?.spot != null) {
-              final index = response!.spot!.touchedBarGroupIndex;
-              setState(() => _selectedBarIndex = index);
-              _executeBarAction(index);
-            }
+  return BarChart(
+    BarChartData(
+      alignment: BarChartAlignment.spaceAround,
+      maxY: axisMax,
+
+      // 👉 INTERACTION
+      barTouchData: BarTouchData(
+        enabled: true,
+        touchCallback: (event, response) {
+          if (event is FlTapUpEvent && response?.spot != null) {
+            final index = response!.spot!.touchedBarGroupIndex;
+            setState(() => _selectedBarIndex = index);
+            _executeBarAction(index);
+          }
+        },
+        touchTooltipData: BarTouchTooltipData(
+          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+            return BarTooltipItem(
+              NumberFormat.compact().format(rod.toY),
+              TextStyle(
+                color: darkBlue,
+                fontWeight: FontWeight.bold,
+                fontSize: 10,
+              ),
+            );
           },
-          touchTooltipData: BarTouchTooltipData(
-            getTooltipItem: (group, groupIndex, rod, rodIndex) {
-              return BarTooltipItem(
-                NumberFormat.compact().format(rod.toY),
-                TextStyle(
-                  color: darkBlue,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 10,
+        ),
+      ),
+
+      // 👉 GROUPES
+      barGroups: [
+        _makeGroup(0, todaySales, darkBlue,
+            _selectedBarIndex == 0, axisMax),
+        _makeGroup(1, monthlySales, primaryYellow,
+            _selectedBarIndex == 1, axisMax),
+        _makeGroup(2, totalExpenses, accentRed,
+            _selectedBarIndex == 2, axisMax),
+      ],
+
+      // 👉 TITRES
+      titlesData: FlTitlesData(
+        leftTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        rightTitles:
+            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+
+        // 🔥 MONTANTS EN HAUT
+        topTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 30,
+            getTitlesWidget: (value, meta) {
+              final idx = value.toInt();
+
+              double val = 0;
+              if (idx == 0) val = todaySales;
+              if (idx == 1) val = monthlySales;
+              if (idx == 2) val = totalExpenses;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text(
+                  NumberFormat.compact().format(val),
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: idx == 2 ? accentRed : darkBlue,
+                  ),
                 ),
               );
             },
           ),
         ),
-        barGroups: [
-          _makeGroup(0, todaySales, darkBlue,
-              _selectedBarIndex == 0, axisMax),
-          _makeGroup(1, monthlySales, primaryYellow,
-              _selectedBarIndex == 1, axisMax),
-          _makeGroup(2, totalExpenses, accentRed,
-              _selectedBarIndex == 2, axisMax),
-        ],
-        titlesData: FlTitlesData(
-          leftTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles:
-              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 80,
-              getTitlesWidget: (value, meta) {
-                const titles = ['Vte Jour', 'Vte Mois', 'Dépenses'];
-                const icons = [
-                  Icons.today,
-                  Icons.calendar_view_month,
-                  Icons.account_balance_wallet
-                ];
 
-                final idx = value.toInt();
-                if (idx >= titles.length) return const SizedBox();
+        // 👉 BAS (TES BOUTONS)
+        bottomTitles: AxisTitles(
+          sideTitles: SideTitles(
+            showTitles: true,
+            reservedSize: 50,
+            getTitlesWidget: (value, meta) {
+              const titles = ['Vte Jour', 'Vte Mois', 'Dépenses'];
+              const icons = [
+                Icons.today,
+                Icons.calendar_view_month,
+                Icons.account_balance_wallet
+              ];
 
-                final isSelected = _selectedBarIndex == idx;
+              final idx = value.toInt();
+              if (idx >= titles.length) return const SizedBox();
 
-                return GestureDetector(
-                  onTap: () {
-                    setState(() => _selectedBarIndex = idx);
-                    _executeBarAction(idx);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 12.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 250),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 9, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: isSelected ? darkBlue : Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color:
-                                  isSelected ? darkBlue : Colors.grey[300]!,
-                            ),
-                            boxShadow: isSelected
-                                ? [
-                                    BoxShadow(
-                                        color: darkBlue.withOpacity(0.2),
-                                        blurRadius: 5)
-                                  ]
-                                : [],
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                icons[idx],
-                                size: 12,
-                                color: isSelected
-                                    ? primaryYellow
-                                    : Colors.grey,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                titles[idx],
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: isSelected
-                                      ? Colors.white
-                                      : Colors.black87,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          idx == 0
-                              ? NumberFormat.compact().format(todaySales)
-                              : idx == 1
-                                  ? NumberFormat.compact().format(monthlySales)
-                                  : NumberFormat.compact().format(totalExpenses),
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w900,
+              final isSelected = _selectedBarIndex == idx;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() => _selectedBarIndex = idx);
+                  _executeBarAction(idx);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 12.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 250),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: isSelected ? darkBlue : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
                             color: isSelected
                                 ? darkBlue
-                                : darkBlue.withOpacity(0.6),
+                                : Colors.grey[300]!,
                           ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: darkBlue.withOpacity(0.2),
+                                    blurRadius: 5,
+                                  )
+                                ]
+                              : [],
                         ),
-                      ],
-                    ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              icons[idx],
+                              size: 12,
+                              color: isSelected
+                                  ? primaryYellow
+                                  : Colors.grey,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              titles[idx],
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: isSelected
+                                    ? Colors.white
+                                    : Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
         ),
-        gridData: const FlGridData(show: false),
-        borderData: FlBorderData(show: false),
       ),
-    );
-  }
 
+      gridData: const FlGridData(show: false),
+      borderData: FlBorderData(show: false),
+    ),
+  );
+}
   BarChartGroupData _makeGroup(
       int x, double y, Color color, bool isTouched, double axisMax) {
     return BarChartGroupData(

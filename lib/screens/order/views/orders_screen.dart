@@ -28,6 +28,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool isLoading = true;
   List<ProductModel> soldProducts = [];
   final TextEditingController _searchController = TextEditingController();
+  String selectedClient = "Client";
+  double reduction = 0.0;
 
   double _calculateTotal() {
     return soldProducts.fold(0.0, (sum, item) => sum + (item.priceAfetDiscount ?? item.price));
@@ -127,7 +129,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
         // Save locally
         await _exitDao.insert(StockExit(
           uuid: uuid,
-          name: "Client", // Default client name
+          name: selectedClient, // Default client name
           productId: product.id,
           productName: product.title,
           quantity: 1,
@@ -521,31 +523,39 @@ Widget _buildActionButtons() {
                   /// Shipping
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
+                    children: [
                       Text(
-                        "Shipping Fee",
+                        "Reduction",
                         style: TextStyle(
                           fontSize: 15,
                           color: Colors.grey,
                         ),
                       ),
-                      Text(
-                        "Free",
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+GestureDetector(
+  onTap: () => _showReductionDialog(context),
+  child: Row(
+    mainAxisSize: MainAxisSize.min, // Important : pour que le Row ne prenne pas toute la largeur
+    children: [
+      Icon(
+        Icons.edit, // Une icône de réduction/étiquette
+        color: Colors.green,
+      ),
+      SizedBox(width: 4), // Petit espace entre l'icône et le texte
+      Text(
+        "${reduction.toStringAsFixed(0)} F",
+        style: TextStyle(
+          fontSize: 15,
+          color: Colors.green,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  ),
+),
                     ],
                   ),
-
-                  const SizedBox(height: 12),
-
-                  /// Discount (exemple fixe)
-                  _summaryRow("Discount", "0 F"),
-
-                  const SizedBox(height: 16),
+                  
+                 const SizedBox(height: 16),
 
                   Divider(color: Colors.grey.withOpacity(0.4)),
 
@@ -554,14 +564,46 @@ Widget _buildActionButtons() {
                   /// Total
                   _summaryRow(
                     "À payer",
-                    "${_calculateTotal().toStringAsFixed(0)} F",
+                    "${(_calculateTotal() - reduction).toStringAsFixed(0)} F",
                     isBold: true,
                   ),
 
                   const SizedBox(height: 10),
 
-                  /// VAT (exemple)
-                  _summaryRow("Estimated VAT", "0 F"),
+                  /// Client
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+children: [
+  Text(
+    "Client",
+    style: TextStyle(
+      fontSize: 13,
+      color: Colors.grey,
+      fontWeight: FontWeight.w400,
+    ),
+  ),
+
+  InkWell(
+    onTap: () => _showClientDialog(context),
+    child: Row(
+      children: [
+        Icon(Icons.edit, size: 16, color: Colors.grey),
+
+        SizedBox(width: 6),
+
+        Text(
+          selectedClient,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.black,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  ),
+],
+                  ),
                 ],
               ),
             ),
@@ -673,5 +715,72 @@ Widget _buildActionButtons() {
       ),
     ],
   );
+}
+
+void _showClientDialog(BuildContext context) {
+    TextEditingController clientController = TextEditingController(text: selectedClient);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white, // <--- Ajoute cette ligne ici
+          surfaceTintColor: Colors.transparent, // Optionnel : évite les teintes bleutées de Material 3
+          title: Text("Sélectionner un client"),
+          content: TextField(
+            controller: clientController,
+            decoration: InputDecoration(hintText: "Nom du client"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Annuler"),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  selectedClient = clientController.text.isEmpty ? "Client" : clientController.text;
+                });
+                Navigator.pop(context);
+              },
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+}
+
+void _showReductionDialog(BuildContext context) {
+    TextEditingController reductionController = TextEditingController(text: reduction.toString());
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.white, // Fond blanc
+          surfaceTintColor: Colors.transparent, // Désactive la teinte Material 3
+          title: Text("Modifier la réduction"),
+          content: TextField(
+            controller: reductionController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(hintText: "Montant de réduction"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Annuler"),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  reduction = double.tryParse(reductionController.text) ?? 0.0;
+                });
+                Navigator.pop(context);
+              },
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
 }
 }
