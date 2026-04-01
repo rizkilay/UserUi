@@ -52,167 +52,202 @@ floatingActionButton: SizedBox(
           padding: const EdgeInsets.all(defaultPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "15 000 Fcfa",
-                        style: TextStyle(fontWeight: FontWeight.bold,color: Color(0xFF2C3E50)),
-                      ),
-                      Text(
-                        "Somme totale",
-                        style: TextStyle(fontSize: 11, color: Color(0xFF2C3E50)),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-    
-              // --- Section Statistiques ---
-              Text(
-                "Dépenses",
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 12),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.center, // Centre verticalement
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Début : 11 jan",
-                            style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                          ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            "1 050 Fcfa",
-                            style: TextStyle(
-                              fontSize: 19,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF2C3E50),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Spacer(), // Pousse l'image vers la droite
-                      Image.asset(
-                        'assets/images/expenses.png',
-                        width: 50,
-                        height: 50,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-    
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildMiniStatCard(
-                      "En provenance de la caisse",
-                      "750 550",
-                      const Color(0xFFFF6B00),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildMiniStatCard(
-                      "En provenance des financeurs",
-                      "300 050",
-                      const Color(0xFFFFCC00),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-    
-              // --- Section Mes Transactions ---
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                   Text(
-                    "Détails des dépenses",
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              FutureBuilder<List<Expense>>(
+            children: [              FutureBuilder<List<Expense>>(
                 future: _expenseDao.getAll(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   } else if (snapshot.hasError) {
                     return Text("Erreur : ${snapshot.error}");
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text("Aucune dépense enregistrée.", style: TextStyle(color: Colors.grey)),
-                    );
+                  }
+                  
+                  final expenses = snapshot.data ?? [];
+                  
+                  double totalAmount = 0; // Global total
+                  double monthlyTotal = 0; // Total for current month
+                  double caisseAmount = 0;
+                  double financeurAmount = 0;
+                  
+                  final now = DateTime.now();
+                  DateTime? earliestDateOfMonth;
+
+                  for (var e in expenses) {
+                    totalAmount += e.amount;
+                    if (e.source == ExpenseSource.caisse) {
+                      caisseAmount += e.amount;
+                    } else {
+                      financeurAmount += e.amount;
+                    }
+                    
+                    if (e.dateTime.year == now.year && e.dateTime.month == now.month) {
+                      monthlyTotal += e.amount;
+                      if (earliestDateOfMonth == null || e.dateTime.isBefore(earliestDateOfMonth)) {
+                        earliestDateOfMonth = e.dateTime;
+                      }
+                    }
                   }
 
-                  final expenses = snapshot.data!;
-                  return ListView.separated(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: expenses.length,
-                    separatorBuilder: (context, index) => const Divider(),
-                    itemBuilder: (context, index) {
-                      final expense = expenses[index];
-                      return ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF3377B0).withOpacity(0.1),
-                            shape: BoxShape.circle,
+                  String debutText = earliestDateOfMonth != null 
+                    ? "Début : ${DateFormat('dd MMM', 'fr_FR').format(earliestDateOfMonth)}" 
+                    : "Début : ${DateFormat('MMMM', 'fr_FR').format(now)}";
+                  
+                  final NumberFormat formatter = NumberFormat.decimalPattern('fr_FR');
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "${formatter.format(totalAmount)} Fcfa",
+                                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
+                              ),
+                              const Text(
+                                "Somme totale",
+                                style: TextStyle(fontSize: 11, color: Color(0xFF2C3E50)),
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.outbound, color: Color(0xFF3377B0)),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+            
+                      // --- Section Statistiques ---
+                      Text(
+                        "Dépenses",
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    debutText,
+                                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    "${formatter.format(monthlyTotal)} Fcfa",
+                                    style: const TextStyle(
+                                      fontSize: 19,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF2C3E50),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Spacer(),
+                              Image.asset(
+                                'assets/images/expenses.png',
+                                width: 50,
+                                height: 50,
+                              ),
+                            ],
+                          ),
                         ),
-                        title: Text(
-                          expense.reason,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 16),
+            
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildMiniStatCard(
+                              "En provenance de la caisse",
+                              formatter.format(caisseAmount),
+                              const Color(0xFFFF6B00),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildMiniStatCard(
+                              "En provenance des financeurs",
+                              formatter.format(financeurAmount),
+                              const Color(0xFFFFCC00),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+            
+                      // --- Section Mes Transactions ---
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                           Text(
+                            "Détails des dépenses",
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      if (expenses.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text("Aucune dépense enregistrée.", style: TextStyle(color: Colors.grey)),
+                        )
+                      else
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: expenses.length,
+                          separatorBuilder: (context, index) => const Divider(),
+                          itemBuilder: (context, index) {
+                            final expense = expenses[index];
+                            return ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF3377B0).withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.outbound, color: Color(0xFF3377B0)),
+                              ),
+                              title: Text(
+                                expense.reason,
+                                style: const TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                              subtitle: Text(
+                                DateFormat('dd MMM yyyy', 'fr_FR').format(expense.dateTime) + 
+                                (expense.description != null ? ' - ${expense.description}' : ''),
+                                style: const TextStyle(fontSize: 12),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              trailing: Text(
+                                "${formatter.format(expense.amount)} Fcfa",
+                                style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
+                              ),
+                            );
+                          },
                         ),
-                        subtitle: Text(
-                          DateFormat('dd MMM yyyy', 'fr_FR').format(expense.dateTime) + 
-                          (expense.description != null ? ' - ${expense.description}' : ''),
-                          style: const TextStyle(fontSize: 12),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Text(
-                          "${expense.amount} Fcfa",
-                          style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.bold),
-                        ),
-                      );
-                    },
+                    ],
                   );
                 },
-              ),
+              ),     ),
             ],
           ),
         ),

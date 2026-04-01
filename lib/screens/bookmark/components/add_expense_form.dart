@@ -112,7 +112,7 @@ class _AddExpenseFormState extends State<AddExpenseForm> {
       case ExpenseCategory.entretien: return 'Entretien';
       case ExpenseCategory.achatMateriel: return 'Matériel';
       case ExpenseCategory.investisseur: return 'Investisseur';
-      case ExpenseCategory.achatStock: return 'Stock/Achat';
+      case ExpenseCategory.achatStock: return 'Autre';
     }
   }
 
