@@ -198,4 +198,20 @@ class CotisationDao {
     
     return transactions;
   }
+
+  Future<List<Cotisation>> getUnsynced() async {
+    final db = await DatabaseHelper.instance.database;
+    final res = await db.query('cotisations', where: 'is_synced = 0');
+    return res.map((e) => Cotisation.fromMap(e)).toList();
+  }
+
+  Future<void> markAsSynced(List<int> ids) async {
+    if (ids.isEmpty) return;
+    final db = await DatabaseHelper.instance.database;
+    await db.update(
+      'cotisations',
+      {'is_synced': 1},
+      where: 'id IN (${ids.join(',')})',
+    );
+  }
 }

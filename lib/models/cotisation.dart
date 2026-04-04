@@ -1,3 +1,5 @@
+import 'package:uuid/uuid.dart';
+
 class Cotisation {
   final int? id;
   final double amount;
@@ -8,6 +10,8 @@ class Cotisation {
   final int? partnerId;
   final double? remaining;
   final bool isWithdrawn;
+  final bool isSynced;
+  final String uuid;
 
   Cotisation({
     this.id,
@@ -19,7 +23,9 @@ class Cotisation {
     this.partnerId,
     this.remaining,
     this.isWithdrawn = false,
-  });
+    this.isSynced = false,
+    String? uuid,
+  }) : uuid = uuid ?? const Uuid().v4();
 
   Map<String, dynamic> toMap() {
     return {
@@ -30,6 +36,8 @@ class Cotisation {
       'source': source,
       'category': category,
       'partner_id': partnerId,
+      'is_synced': isSynced ? 1 : 0,
+      'uuid': uuid,
     };
   }
 
@@ -42,6 +50,8 @@ class Cotisation {
       source: map['source'] ?? 'caisse',
       category: map['category'],
       partnerId: map['partner_id'],
+      isSynced: (map['is_synced'] as int? ?? 0) == 1,
+      uuid: map['uuid'] ?? const Uuid().v4(),
     );
   }
 }

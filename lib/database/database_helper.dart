@@ -19,9 +19,22 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 3,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute("ALTER TABLE stock_exits ADD COLUMN is_synced INTEGER DEFAULT 0");
+      await db.execute("ALTER TABLE expenses ADD COLUMN is_synced INTEGER DEFAULT 0");
+      await db.execute("ALTER TABLE cotisations ADD COLUMN is_synced INTEGER DEFAULT 0");
+    }
+    if (oldVersion < 3) {
+      await db.execute("ALTER TABLE expenses ADD COLUMN uuid TEXT");
+      await db.execute("ALTER TABLE cotisations ADD COLUMN uuid TEXT");
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -50,7 +63,9 @@ class DatabaseHelper {
         description TEXT,
         is_validated INTEGER DEFAULT 0,
         source TEXT DEFAULT 'caisse',
-        financeur_id TEXT
+        financeur_id TEXT,
+        is_synced INTEGER DEFAULT 0,
+        uuid TEXT
       )
     ''');
 
@@ -63,7 +78,9 @@ class DatabaseHelper {
         note TEXT,
         source TEXT DEFAULT 'caisse',
         category TEXT,
-        partner_id INTEGER
+        partner_id INTEGER,
+        is_synced INTEGER DEFAULT 0,
+        uuid TEXT
       )
     ''');
 
@@ -89,7 +106,8 @@ class DatabaseHelper {
         quantity INTEGER,
         amount REAL,
         client_id INTEGER,
-        created_at TEXT
+        created_at TEXT,
+        is_synced INTEGER DEFAULT 0
       )
     ''');
 

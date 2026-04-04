@@ -92,4 +92,20 @@ class ExpenseDao {
     final lastDay = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
     return getTotalByDateRange(firstDay, lastDay);
   }
+
+  Future<List<Expense>> getUnsynced() async {
+    final db = await DatabaseHelper.instance.database;
+    final res = await db.query('expenses', where: 'is_synced = 0');
+    return res.map((e) => Expense.fromMap(e)).toList();
+  }
+
+  Future<void> markAsSynced(List<int> ids) async {
+    if (ids.isEmpty) return;
+    final db = await DatabaseHelper.instance.database;
+    await db.update(
+      'expenses',
+      {'is_synced': 1},
+      where: 'id IN (${ids.join(',')})',
+    );
+  }
 }
