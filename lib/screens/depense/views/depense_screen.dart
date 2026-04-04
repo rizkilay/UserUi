@@ -101,105 +101,121 @@ class _DepenseScreenState extends State<DepenseScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "${formatter.format(totalAmount)} Fcfa",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2C3E50),
-                                ),
-                              ),
-                              const Text(
-                                "Somme totale",
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF2C3E50)),
-                              ),
-                            ],
+                          Text(
+                            "${formatter.format(totalAmount)} Fcfa",
+                            style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2C3E50)),
                           ),
+                          const Text("Total des dépenses",
+                              style: TextStyle(fontSize: 11, color: Color(0xFF3664FA))), 
                         ],
                       ),
+                    ],
+                  ),
 
                       const SizedBox(height: 24),
 
                       Text(
-                        "Dépenses",
+                        "Dépenses (Ce mois)",
                         style: Theme.of(context).textTheme.titleSmall,
                       ),
 
                       const SizedBox(height: 12),
 
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  debutText,
-                                  style: TextStyle(
-                                      color: Colors.grey[600], fontSize: 14),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  "${formatter.format(monthlyTotal)} Fcfa",
-                                  style: const TextStyle(
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.w900,
-                                    color: Color(0xFF2C3E50),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            Image.asset(
-                              'assets/images/expenses.png',
-                              width: 50,
-                              height: 50,
-                            ),
-                          ],
-                        ),
-                      ),
+                     Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(20), // Padding augmenté pour laisser respirer
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(16),
+    border: Border.all(color: Colors.grey[200]!), // Plus arrondi = plus moderne
+    boxShadow: [
+      BoxShadow(
+        color: const Color(0xFF2C3E50).withOpacity(0.08),
+        blurRadius: 20,
+        offset: const Offset(0, 10),
+      ),
+    ],
+  ),
+  child: Row(
+    children: [
+      // Section Texte
+      Expanded(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              debutText.toUpperCase(), // Passage en majuscules pour un look "label"
+              style: TextStyle(
+                color: Colors.blueGrey[300],
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              "${formatter.format(monthlyTotal)} FCFA",
+              style: const TextStyle(
+                fontSize: 22, // Légèrement plus grand
+                fontWeight: FontWeight.w800,
+                color: Color(0xFF1A1A1A), // Noir plus profond
+                letterSpacing: -0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+      
+      // Section Icône stylisée
+      Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F4F8), // Fond d'icône léger
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Image.asset(
+          'assets/images/expenses.png',
+          width: 32,
+          height: 32,
+          fit: BoxFit.contain,
+        ),
+      ),
+    ],
+  ),
+),
 
                       const SizedBox(height: 16),
 
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildMiniStatCard(
-                              "Caisse",
-                              formatter.format(caisseAmount),
-                              const Color(0xFFFF6B00),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _buildMiniStatCard(
-                              "Finance",
-                              formatter.format(financeurAmount),
-                              const Color(0xFFFFCC00),
-                            ),
-                          ),
-                        ],
-                      ),
+Row(
+  children: [
+    Expanded(
+      child: _buildMiniStatCard(
+        "Caisse",
+        formatter.format(caisseAmount),
+        const Color(0xFFFF6B00), // Orange
+        Icons.account_balance_wallet_outlined, // Icône de portefeuille fine
+      ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+      child: _buildMiniStatCard(
+        "Finance",
+        formatter.format(financeurAmount),
+        const Color(0xFFEBC12F), // Jaune (légèrement ajusté pour la lisibilité)
+        Icons.trending_up_rounded, // Icône de tendance/croissance
+      ),
+    ),
+  ],
+),
 
                       const SizedBox(height: 32),
 
@@ -301,58 +317,59 @@ class _DepenseScreenState extends State<DepenseScreen> {
     );
   }
 
-  Widget _buildMiniStatCard(
-      String label, String amount, Color accentColor) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 4,
-            height: 30,
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style:
-                      const TextStyle(fontSize: 12, color: Colors.grey),
-                  maxLines: 2,
+Widget _buildMiniStatCard(String label, String amount, Color accentColor, IconData icon) {
+  // Définir des couleurs dérivées pour l'esthétique
+  final backgroundColor = accentColor.withOpacity(0.08); // Fond très clair
+  final textColor = accentColor.withOpacity(0.8);      // Texte coloré mais doux
+
+  return Container(
+    padding: const EdgeInsets.all(16), // Padding généreux
+    decoration: BoxDecoration(
+      color: backgroundColor, // Fond coloré clair
+      borderRadius: BorderRadius.circular(12), // Bordures bien arrondies
+      border: Border.all(color: accentColor.withOpacity(0.2)), // Légère bordure
+    ),
+    child: Row(
+      children: [
+        // Icône à gauche, fine et colorée
+        Icon(
+          icon,
+          color: accentColor,
+          size: 24, // Taille d'icône standard
+        ),
+        const SizedBox(width: 12), // Espace après l'icône
+        
+        // Texte (Label et Montant)
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min, // S'adapte au contenu
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: textColor, // Texte coloré doux
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  "$amount Fcfa",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    color: accentColor,
-                  ),
+              ),
+              const SizedBox(height: 2), // Petit espace
+              Text(
+                "$amount FCFA", // Montant
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87, // Noir doux pour le montant
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 
   String _getCategoryName(ExpenseCategory category) {
     switch (category) {
