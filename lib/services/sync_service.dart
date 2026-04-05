@@ -6,6 +6,7 @@ import '../database/product_dao.dart';
 import '../database/exit_dao.dart';
 import '../database/expense_dao.dart';
 import '../database/cotisation_dao.dart';
+import '../database/sync_metadata_dao.dart';
 import '../models/stock_exit.dart';
 import '../models/expense.dart';
 import '../models/cotisation.dart';
@@ -20,30 +21,78 @@ class SyncService {
   final ExitDao _exitDao = ExitDao();
   final ExpenseDao _expenseDao = ExpenseDao();
   final CotisationDao _cotisationDao = CotisationDao();
+  final SyncMetadataDao _metadataDao = SyncMetadataDao();
 
-  /// Fetches products from the backend and stores them locally.
-  /// Returns the list of products (from local DB after sync, or local if offline).
+  /// Fetches products from the backend incrementally and stores them locally.
   Future<List<ProductModel>> fetchAndSyncProducts() async {
     try {
-      final response = await http
-          .get(Uri.parse('$_baseUrl/api/products'))
-          .timeout(const Duration(seconds: 10));
+      final String? lastSync = await _metadataDao.getValue('last_products_sync');
+      final uri = Uri.parse('$_baseUrl/api/products').replace(
+        queryParameters: lastSync != null ? {'since': lastSync} : null,
+      );
+
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        final products = data.map((e) => ProductModel.fromJson(e)).toList();
+        final Map<String, dynamic> responseData = jsonDecode(response.body);
+        final List<dynamic> productsJson = responseData['products'] ?? [];
+        final String? serverTime = responseData['server_time'];
 
-        // Persist locally
+        if (productsJson.isEmpty) {
+          debugPrint('SyncService: No new product updates');
+          return await _loadLocal();
+        }
+
+        // 1. Get all unsynced sales (Exits) to avoid overwriting pending local changes
+        final unsyncedExits = await _exitDao.getUnsynced();
+        final Map<int, int> unsyncedQuantities = {};
+        for (var exit in unsyncedExits) {
+          unsyncedQuantities[exit.productId] = (unsyncedQuantities[exit.productId] ?? 0) + exit.quantity;
+        }
+
+        final List<ProductModel> products = [];
+        for (var json in productsJson) {
+          var product = ProductModel.fromJson(json);
+
+          // 2. Conflict Resolution: Adjust quantity if there are unsynced sales locally
+          if (unsyncedQuantities.containsKey(product.id) && product.quantity != null) {
+            int localUnsynced = unsyncedQuantities[product.id]!;
+            // Correct quantity = Server Quantity - Local Unsynced Sales
+            int adjustedQty = product.quantity! - localUnsynced;
+            if (adjustedQty < 0) adjustedQty = 0; // Safety check
+
+            product = ProductModel(
+              id: product.id,
+              image: product.image,
+              brandName: product.brandName,
+              title: product.title,
+              price: product.price,
+              priceAfetDiscount: product.priceAfetDiscount,
+              dicountpercent: product.dicountpercent,
+              quantity: adjustedQty,
+              category: product.category,
+              description: product.description,
+            );
+          }
+          products.add(product);
+        }
+
+        // 3. Persist locally
         await _productDao.insertAll(products);
 
-        debugPrint('SyncService: ${products.length} products synced from backend');
-        return products;
+        // 4. Update last sync time
+        if (serverTime != null) {
+          await _metadataDao.setValue('last_products_sync', serverTime);
+        }
+
+        debugPrint('SyncService: ${products.length} products updated incrementally');
+        return await _loadLocal();
       } else {
         debugPrint('SyncService: Backend error ${response.statusCode}, loading from local DB');
         return await _loadLocal();
       }
     } catch (e) {
-      debugPrint('SyncService: offline or error ($e), loading from local DB');
+      debugPrint('SyncService: Error during incremental sync ($e), loading from local DB');
       return await _loadLocal();
     }
   }

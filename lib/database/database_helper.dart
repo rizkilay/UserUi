@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 3,
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -35,9 +35,24 @@ class DatabaseHelper {
       await db.execute("ALTER TABLE expenses ADD COLUMN uuid TEXT");
       await db.execute("ALTER TABLE cotisations ADD COLUMN uuid TEXT");
     }
+    if (oldVersion < 4) {
+      await db.execute('''
+        CREATE TABLE sync_metadata (
+          key TEXT PRIMARY KEY,
+          value TEXT
+        )
+      ''');
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    // Sync Metadata
+    await db.execute('''
+      CREATE TABLE sync_metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT
+      )
+    ''');
     // Produits (synchrisés depuis boutique-app via backend)
     await db.execute('''
       CREATE TABLE products (

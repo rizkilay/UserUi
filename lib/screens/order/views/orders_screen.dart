@@ -8,7 +8,8 @@ import 'package:shop/models/product_model.dart';
 import 'package:shop/route/route_constants.dart';
 import 'package:shop/services/sync_service.dart';
 import 'package:shop/theme/input_decoration_theme.dart';
-import 'package:uuid/uuid.dart';
+//import 'package:uuid/uuid.dart';
+import 'dart:math';
 
 
 import 'package:shop/database/exit_dao.dart';
@@ -19,6 +20,19 @@ class OrdersScreen extends StatefulWidget {
 
   @override
   State<OrdersScreen> createState() => _OrdersScreenState();
+}
+
+String generateShortUuid() {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  final random = Random();
+
+  final letterPart =
+      letters[random.nextInt(letters.length)] +
+      letters[random.nextInt(letters.length)];
+
+  final numberPart = random.nextInt(1000).toString().padLeft(4, '0');
+
+  return '$letterPart$numberPart'; 
 }
 
 class _OrdersScreenState extends State<OrdersScreen> {
@@ -124,7 +138,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     int successCount = 0;
     try {
-      final uuid = const Uuid().v4();
+      final uuid = generateShortUuid();
       for (var product in soldProducts) {
         // Save locally
         await _exitDao.insert(StockExit(
