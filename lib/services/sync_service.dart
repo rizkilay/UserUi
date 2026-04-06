@@ -43,23 +43,23 @@ class SyncService {
           return await _loadLocal();
         }
 
-        // 1. Get all unsynced sales (Exits) to avoid overwriting pending local changes
-        final unsyncedExits = await _exitDao.getUnsynced();
-        final Map<int, int> unsyncedQuantities = {};
-        for (var exit in unsyncedExits) {
-          unsyncedQuantities[exit.productId] = (unsyncedQuantities[exit.productId] ?? 0) + exit.quantity;
+        // 1. Get all sales that should be subtracted from server quantity
+        // This includes unsynced sales AND recently synced sales not yet in server snapshot
+        final localSales = await _exitDao.getSalesNotYetOnServer(serverTime);
+        final Map<int, int> localQuantities = {};
+        for (var exit in localSales) {
+          localQuantities[exit.productId] = (localQuantities[exit.productId] ?? 0) + exit.quantity;
         }
 
         final List<ProductModel> products = [];
         for (var json in productsJson) {
           var product = ProductModel.fromJson(json);
 
-          // 2. Conflict Resolution: Adjust quantity if there are unsynced sales locally
-          if (unsyncedQuantities.containsKey(product.id) && product.quantity != null) {
-            int localUnsynced = unsyncedQuantities[product.id]!;
-            // Correct quantity = Server Quantity - Local Unsynced Sales
-            int adjustedQty = product.quantity! - localUnsynced;
-            if (adjustedQty < 0) adjustedQty = 0; // Safety check
+          // 2. Conflict Resolution: Adjust quantity based on local sales protection
+          if (localQuantities.containsKey(product.id) && product.quantity != null) {
+            int localImpact = localQuantities[product.id]!;
+            int adjustedQty = product.quantity! - localImpact;
+            if (adjustedQty < 0) adjustedQty = 0;
 
             product = ProductModel(
               id: product.id,
@@ -113,13 +113,17 @@ class SyncService {
       // 1. Push Sales (Exits)
       final unsyncedExits = await _exitDao.getUnsynced();
       if (unsyncedExits.isNotEmpty) {
+        final pushTime = DateTime.now().toIso8601String();
         final res = await http.post(
           Uri.parse('$_baseUrl/api/sync-exits'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(unsyncedExits.map((e) => e.toMap()).toList()),
         );
         if (res.statusCode == 200) {
-          await _exitDao.markAsSynced(unsyncedExits.map((e) => e.id!).toList());
+          await _exitDao.markAsSyncedWithTimestamp(
+            unsyncedExits.map((e) => e.id!).toList(),
+            pushTime,
+          );
         } else {
           success = false;
         }

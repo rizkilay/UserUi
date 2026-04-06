@@ -10,6 +10,7 @@ class StockExit {
   final String? createdAt;
   final String? category;
   final bool isSynced;
+  final String? syncedAt;
 
   StockExit({
     this.id,
@@ -23,6 +24,7 @@ class StockExit {
     this.createdAt,
     this.category,
     this.isSynced = false,
+    this.syncedAt,
   });
 
   Map<String, dynamic> toMap() {
@@ -36,6 +38,7 @@ class StockExit {
       'client_id': clientId,
       'created_at': createdAt,
       'is_synced': isSynced ? 1 : 0,
+      'synced_at': syncedAt,
     };
   }
 
@@ -52,6 +55,7 @@ class StockExit {
       createdAt: map['created_at']?.toString(),
       category: map['category']?.toString(),
       isSynced: (map['is_synced'] as int? ?? 0) == 1,
+      syncedAt: map['synced_at']?.toString(),
     );
   }
 }

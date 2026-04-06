@@ -4,7 +4,17 @@ import '../models/stock_exit.dart';
 class ExitDao {
   Future<void> insert(StockExit exit) async {
     final db = await DatabaseHelper.instance.database;
-    await db.insert('stock_exits', exit.toMap());
+    await db.transaction((txn) async {
+      // 1. Insérer la sortie de stock
+      await txn.insert('stock_exits', exit.toMap());
+
+      // 2. Diminuer la quantité du produit localement
+      await txn.rawUpdate('''
+        UPDATE products 
+        SET quantity = MAX(0, quantity - ?) 
+        WHERE id = ?
+      ''', [exit.quantity, exit.productId]);
+    });
   }
 
   /// Toutes les sorties sans doublon par UUID (résumé par facture)
@@ -84,12 +94,43 @@ class ExitDao {
 
   Future<void> delete(int id) async {
     final db = await DatabaseHelper.instance.database;
-    await db.delete('stock_exits', where: 'id = ?', whereArgs: [id]);
+    await db.transaction((txn) async {
+      // 1. Récupérer la sortie pour savoir quel produit et quelle quantité restaurer
+      final res = await txn.query('stock_exits', where: 'id = ?', whereArgs: [id]);
+      if (res.isNotEmpty) {
+        final exit = StockExit.fromMap(res.first);
+
+        // 2. Restaurer le stock
+        await txn.rawUpdate('''
+          UPDATE products 
+          SET quantity = quantity + ? 
+          WHERE id = ?
+        ''', [exit.quantity, exit.productId]);
+      }
+
+      // 3. Supprimer l'entrée
+      await txn.delete('stock_exits', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   Future<void> deleteByUuid(String uuid) async {
     final db = await DatabaseHelper.instance.database;
-    await db.delete('stock_exits', where: 'uuid = ?', whereArgs: [uuid]);
+    await db.transaction((txn) async {
+      // 1. Récupérer toutes les sorties associées à cet UUID
+      final res = await txn.query('stock_exits', where: 'uuid = ?', whereArgs: [uuid]);
+      for (var row in res) {
+        final exit = StockExit.fromMap(row);
+        // 2. Restaurer le stock pour chaque produit
+        await txn.rawUpdate('''
+          UPDATE products 
+          SET quantity = quantity + ? 
+          WHERE id = ?
+        ''', [exit.quantity, exit.productId]);
+      }
+
+      // 3. Supprimer par UUID
+      await txn.delete('stock_exits', where: 'uuid = ?', whereArgs: [uuid]);
+    });
   }
 
   Future<void> update(StockExit exit) async {
@@ -163,13 +204,36 @@ class ExitDao {
     return res.map((e) => StockExit.fromMap(e)).toList();
   }
 
-  Future<void> markAsSynced(List<int> ids) async {
+  Future<void> markAsSyncedWithTimestamp(List<int> ids, String timestamp) async {
     if (ids.isEmpty) return;
     final db = await DatabaseHelper.instance.database;
     await db.update(
       'stock_exits',
-      {'is_synced': 1},
+      {
+        'is_synced': 1,
+        'synced_at': timestamp,
+      },
       where: 'id IN (${ids.join(',')})',
     );
+  }
+
+  Future<List<StockExit>> getSalesNotYetOnServer(String? serverTime) async {
+    final db = await DatabaseHelper.instance.database;
+    if (serverTime == null) {
+      // Si on n'a pas de temps serveur, on prend tous les ventes locales (synced ou non)
+      // car on ne sait pas si elles sont dans le snapshot
+      final res = await db.query('stock_exits');
+      return res.map((e) => StockExit.fromMap(e)).toList();
+    }
+    
+    // Une vente n'est pas sur le serveur si :
+    // 1. Elle n'est pas encore synchronisée (is_synced = 0)
+    // 2. OU elle a été synchronisée APRÈS le timestamp du snapshot serveur
+    final res = await db.query(
+      'stock_exits',
+      where: 'is_synced = 0 OR synced_at > ?',
+      whereArgs: [serverTime],
+    );
+    return res.map((e) => StockExit.fromMap(e)).toList();
   }
 }

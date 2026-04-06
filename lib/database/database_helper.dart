@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -42,6 +42,9 @@ class DatabaseHelper {
           value TEXT
         )
       ''');
+    }
+    if (oldVersion < 5) {
+      await db.execute("ALTER TABLE stock_exits ADD COLUMN synced_at TEXT");
     }
   }
 
@@ -122,7 +125,8 @@ class DatabaseHelper {
         amount REAL,
         client_id INTEGER,
         created_at TEXT,
-        is_synced INTEGER DEFAULT 0
+        is_synced INTEGER DEFAULT 0,
+        synced_at TEXT
       )
     ''');
 
