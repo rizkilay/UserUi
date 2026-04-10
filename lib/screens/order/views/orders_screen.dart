@@ -44,6 +44,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   final TextEditingController _searchController = TextEditingController();
   String selectedClient = "Client";
   double reduction = 0.0;
+  bool isRecordingSale = false;
 
   double _calculateTotal() {
     return soldProducts.fold(0.0, (sum, item) => sum + (item.priceAfetDiscount ?? item.price));
@@ -134,48 +135,29 @@ class _OrdersScreenState extends State<OrdersScreen> {
       return;
     }
 
-    setState(() => isLoading = true);
+    setState(() => isRecordingSale = true);
 
     int successCount = 0;
     try {
       final uuid = generateShortUuid();
       for (var product in soldProducts) {
-        // Save locally
+        // Save locally only
         await _exitDao.insert(StockExit(
           uuid: uuid,
-          name: selectedClient, // Default client name
+          name: selectedClient,
           productId: product.id,
           productName: product.title,
           quantity: 1,
           amount: product.priceAfetDiscount ?? product.price,
           createdAt: DateTime.now().toIso8601String(),
         ));
-
-        // Save remotely
-        try {
-          await http.post(
-            Uri.parse('https://backend-boutique.vercel.app/api/sales'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'product_id': product.id,
-              'transaction_id': uuid,
-              'quantity': 1,
-              'amount': product.priceAfetDiscount ?? product.price,
-            }),
-          );
-          successCount++;
-        } catch (e) {
-          debugPrint('Remote error for sale: $e');
-          // We still increment success count if local save succeeded? 
-          // Usually, yes, since it's now in the local DB.
-          successCount++;
-        }
+        successCount++;
       }
 
       if (mounted) {
         setState(() {
           soldProducts.clear();
-          isLoading = false;
+          isRecordingSale = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -184,12 +166,12 @@ class _OrdersScreenState extends State<OrdersScreen> {
           ),
         );
         // Refresh after sales
-        await fetchProducts();
+        // Removed automatic refresh to preserve local quantity updates after sale
       }
     } catch (e) {
       debugPrint('Error recording sales: $e');
       if (mounted) {
-        setState(() => isLoading = false);
+        setState(() => isRecordingSale = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Erreur lors de l\'enregistrement : $e')),
         );
@@ -527,10 +509,11 @@ Widget _buildActionButtons() {
                   const SizedBox(height: 20),
 
                   /// Subtotal
-                  _summaryRow(
-                    "Subtotal",
-                    "${_calculateTotal().toStringAsFixed(0)} F",
-                  ),
+                  // Display each selected product with its price
+                    ...soldProducts.map((product) => _summaryRow(
+                      "${product.title}",
+                      "${(product.priceAfetDiscount ?? product.price).toStringAsFixed(0)} F",
+                    )).toList(),
 
                   const SizedBox(height: 12),
 
@@ -643,19 +626,35 @@ children: [
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(14),
-                  onTap: () {
-                    Navigator.pop(context);
-                    recordAllSales();
+                  onTap: isRecordingSale ? null : () async {
+                    setState(() => isRecordingSale = true);
+                    try {
+                      await recordAllSales();
+                    } finally {
+                      if (mounted) {
+                        setState(() => isRecordingSale = false);
+                        Navigator.pop(context);
+                      }
+                    }
                   },
-                  child: const Center(
-                    child: Text(
-                      "Continue",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
+                  child: Center(
+                    child: isRecordingSale
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            "Continue",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -708,28 +707,36 @@ children: [
   }
 
   Widget _summaryRow(String title, String value, {bool isBold = false}) {
-  return Row(
-    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-    children: [
-      Text(
-        title,
-        style: TextStyle(
-          fontSize: 13,
-          color: Colors.grey,
-          fontWeight: isBold ? FontWeight.w500 : FontWeight.w400,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey,
+            fontWeight: isBold ? FontWeight.w500 : FontWeight.w400,
+          ),
         ),
-      ),
-      Text(
-        value,
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.black,
-          fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14,
+            color: Colors.black,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
+          ),
         ),
-      ),
-    ],
-  );
-}
+      ],
+    );
+  }
+
+  // Helper to display list of selected products in the order summary modal
+  List<Widget> _buildSoldProductsList() {
+    return soldProducts.map((product) {
+      final price = product.priceAfetDiscount ?? product.price;
+      return _summaryRow(product.title, "${price.toStringAsFixed(0)} F");
+    }).toList();
+  }
 
 void _showClientDialog(BuildContext context) {
     TextEditingController clientController = TextEditingController(text: selectedClient);
