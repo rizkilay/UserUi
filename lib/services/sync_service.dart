@@ -117,7 +117,11 @@ class SyncService {
         final res = await http.post(
           Uri.parse('$_baseUrl/api/sync-exits'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode(unsyncedExits.map((e) => e.toMap()).toList()),
+          body: jsonEncode(unsyncedExits.map((e) {
+            var map = e.toMap();
+            map['uuid'] = '${e.uuid}_${e.productId}';
+            return map;
+          }).toList()),
         );
         if (res.statusCode == 200) {
           await _exitDao.markAsSyncedWithTimestamp(

@@ -139,16 +139,36 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
     int successCount = 0;
     try {
-      final uuid = generateShortUuid();
-      for (var product in soldProducts) {
+      final String uuid = generateShortUuid();
+
+      // Grouper les produits par ID pour éviter les doublons dans la DB
+      Map<int, Map<String, dynamic>> grouped = {};
+      for (var p in soldProducts) {
+        if (grouped.containsKey(p.id)) {
+          grouped[p.id]!['quantity'] += 1;
+          grouped[p.id]!['totalAmount'] += (p.priceAfetDiscount ?? p.price);
+        } else {
+          grouped[p.id] = {
+            'product': p,
+            'quantity': 1,
+            'totalAmount': (p.priceAfetDiscount ?? p.price),
+          };
+        }
+      }
+
+      for (var item in grouped.values) {
+        final ProductModel product = item['product'];
+        final int qty = item['quantity'];
+        final double amount = item['totalAmount'];
+
         // Save locally only
         await _exitDao.insert(StockExit(
           uuid: uuid,
           name: selectedClient,
           productId: product.id,
           productName: product.title,
-          quantity: 1,
-          amount: product.priceAfetDiscount ?? product.price,
+          quantity: qty,
+          amount: amount,
           createdAt: DateTime.now().toIso8601String(),
         ));
         successCount++;
@@ -279,7 +299,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                   final product = filteredProducts[index];
                                   return SecondaryProductCard(
                                     image: product.image,
-                                    brandName: product.brandName,
+                                    category: product.category,
                                     title: product.title,
                                     price: product.price,
                                     priceAfetDiscount: product.priceAfetDiscount,
@@ -510,10 +530,28 @@ Widget _buildActionButtons() {
 
                   /// Subtotal
                   // Display each selected product with its price
-                    ...soldProducts.map((product) => _summaryRow(
-                      "${product.title}",
-                      "${(product.priceAfetDiscount ?? product.price).toStringAsFixed(0)} F",
-                    )).toList(),
+                  ...(() {
+                    Map<int, Map<String, dynamic>> grouped = {};
+                    for (var p in soldProducts) {
+                      if (grouped.containsKey(p.id)) {
+                        grouped[p.id]!['quantity'] += 1;
+                        grouped[p.id]!['totalAmount'] += (p.priceAfetDiscount ?? p.price);
+                      } else {
+                        grouped[p.id] = {
+                          'product': p,
+                          'quantity': 1,
+                          'totalAmount': (p.priceAfetDiscount ?? p.price),
+                        };
+                      }
+                    }
+                    return grouped.values.map((item) {
+                      final ProductModel p = item['product'];
+                      final int qty = item['quantity'];
+                      final double total = item['totalAmount'];
+                      final title = qty > 1 ? "${p.title} (x$qty)" : "${p.title}";
+                      return _summaryRow(title, "${total.toStringAsFixed(0)} F");
+                    }).toList();
+                  })(),
 
                   const SizedBox(height: 12),
 
@@ -732,9 +770,25 @@ children: [
 
   // Helper to display list of selected products in the order summary modal
   List<Widget> _buildSoldProductsList() {
-    return soldProducts.map((product) {
-      final price = product.priceAfetDiscount ?? product.price;
-      return _summaryRow(product.title, "${price.toStringAsFixed(0)} F");
+    Map<int, Map<String, dynamic>> grouped = {};
+    for (var p in soldProducts) {
+      if (grouped.containsKey(p.id)) {
+        grouped[p.id]!['quantity'] += 1;
+        grouped[p.id]!['totalAmount'] += (p.priceAfetDiscount ?? p.price);
+      } else {
+        grouped[p.id] = {
+          'product': p,
+          'quantity': 1,
+          'totalAmount': (p.priceAfetDiscount ?? p.price),
+        };
+      }
+    }
+    return grouped.values.map((item) {
+      final ProductModel p = item['product'];
+      final int qty = item['quantity'];
+      final double total = item['totalAmount'];
+      final title = qty > 1 ? "${p.title} (x$qty)" : "${p.title}";
+      return _summaryRow(title, "${total.toStringAsFixed(0)} F");
     }).toList();
   }
 
