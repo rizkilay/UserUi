@@ -62,7 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             
             _buildProfileItem(
               icon: Icons.sync,
-              title: "Synchroniser les données",
+              title: "Synchroniser",
               subtitle: "Envoyer les ventes, cotisations et dépenses",
               trailing: _isSyncing 
                 ? const SizedBox(
@@ -120,17 +120,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     VoidCallback? onTap,
   }) {
     return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
       child: ListTile(
         onTap: onTap,
         leading: Container(
@@ -143,7 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle, style: const TextStyle(fontSize: 12)),
-        trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16),
+        trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 14),
       ),
     );
   }
