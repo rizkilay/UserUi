@@ -418,7 +418,7 @@ Widget _buildBarChart() {
         BarChartRodData(
           toY: y,
           color: isTouched ? color : color.withOpacity(0.7),
-          width: isTouched ? 22 : 16,
+          width: isTouched ? 22 : 20,
           borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
           backDrawRodData: BackgroundBarChartRodData(
             show: true,
