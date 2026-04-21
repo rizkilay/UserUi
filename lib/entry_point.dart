@@ -126,7 +126,7 @@ class _EntryPointState extends State<EntryPoint> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.sell, color: Colors.white, size: 20),
+                    const Icon(Icons.shopping_cart, color: Colors.white, size: 20),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(

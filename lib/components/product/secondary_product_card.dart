@@ -79,7 +79,7 @@ class SecondaryProductCard extends StatelessWidget {
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium!
-                        .copyWith(fontSize: 10),
+                        .copyWith(fontSize: 10 , color: Colors.black87,),
                   ),
                   const SizedBox(height: defaultPadding / 2),
                   Text(
