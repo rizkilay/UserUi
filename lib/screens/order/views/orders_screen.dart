@@ -321,6 +321,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
                                     dicountpercent: product.dicountpercent,
                                     quantity: product.quantity,
                                     style: OutlinedButton.styleFrom(
+                                      backgroundColor: Colors.white,
                                       minimumSize: const Size(double.infinity, 114),
                                       maximumSize: const Size(double.infinity, 114),
                                       padding: const EdgeInsets.all(8),
