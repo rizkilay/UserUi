@@ -97,7 +97,7 @@ class _EntryPointState extends State<EntryPoint> {
       floatingActionButton: _currentIndex == 0
           ? Container(
               height: 40,
-              width: 130,
+              width: MediaQuery.of(context).size.width < 350 ? 150 : 160,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
@@ -118,21 +118,25 @@ class _EntryPointState extends State<EntryPoint> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   shadowColor: Colors.transparent,
+                  padding: EdgeInsets.zero,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(25),
                   ),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.sell, color: Colors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text(
-                      "Vendre",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                    const Icon(Icons.sell, color: Colors.white, size: 20),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        "Vendre",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: MediaQuery.of(context).size.width < 350 ? 14 : 16,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
