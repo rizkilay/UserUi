@@ -42,6 +42,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool isLoading = true;
   List<ProductModel> soldProducts = [];
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
   String selectedClient = "Client";
   double reduction = 0.0;
   bool isRecordingSale = false;
@@ -55,12 +56,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
     super.initState();
     _loadLocalAndSync();
     _searchController.addListener(_onSearchChanged);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _searchFocusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -78,7 +83,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
           final title = product.title.toLowerCase();
           final brand = product.brandName?.toLowerCase() ?? "";
           final category = product.category?.toLowerCase() ?? "";
-          return title.contains(lowerQuery) || brand.contains(lowerQuery) || category.contains(lowerQuery);
+          final tags = product.tags.join(" ").toLowerCase();
+          return title.contains(lowerQuery) || brand.contains(lowerQuery) || category.contains(lowerQuery) || tags.contains(lowerQuery);
         }).toList();
       }
     });
@@ -216,6 +222,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
           quantity: (products[idx].quantity ?? 0) > 0 ? products[idx].quantity! - 1 : 0,
           category: products[idx].category,
           description: products[idx].description,
+          tags: products[idx].tags,
         );
         products[idx] = updatedProduct;
         
@@ -225,6 +232,13 @@ class _OrdersScreenState extends State<OrdersScreen> {
         }
       }
     });
+    
+    // Focus la barre de recherche et sélectionne le texte
+    _searchFocusNode.requestFocus();
+    _searchController.selection = TextSelection(
+      baseOffset: 0,
+      extentOffset: _searchController.text.length,
+    );
   }
 
   void _cancelSelection() {
@@ -243,6 +257,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             quantity: (products[idx].quantity ?? 0) + 1,
             category: products[idx].category,
             description: products[idx].description,
+            tags: products[idx].tags,
           );
           products[idx] = restoredProduct;
 
@@ -373,6 +388,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       child: Form(
         child: TextFormField(
           controller: _searchController,
+          focusNode: _searchFocusNode,
           textInputAction: TextInputAction.search,
           decoration: InputDecoration(
             hintText: "Rechercher un produit...",
@@ -483,9 +499,10 @@ Widget _buildActionButtons() {
       ),
     );
   }
-  void _showOrderSummaryModal(BuildContext context) {
-  showModalBottomSheet(
-    context: context,
+  void _showOrderSummaryModal(BuildContext context) async {
+    _searchFocusNode.unfocus();
+    await showModalBottomSheet(
+      context: context,
     isScrollControlled: true,
     backgroundColor: Colors.white,
     shape: const RoundedRectangleBorder(
@@ -704,6 +721,9 @@ children: [
       );
     },
   );
+  if (mounted) {
+    _searchFocusNode.requestFocus();
+  }
 }
   Widget _filterCard(String label, {bool isBlue = false, bool isGreen = false, IconData? icon}) {
     Color bgColor = const Color(0xFFF4F6F8);

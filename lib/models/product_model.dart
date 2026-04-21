@@ -10,6 +10,7 @@ class ProductModel {
   final int? quantity;
   final String? category;
   final String? description;
+  final List<String> tags;
 
   ProductModel({
     required this.id,
@@ -22,6 +23,7 @@ class ProductModel {
     this.quantity,
     this.category,
     this.description,
+    this.tags = const [],
   });
 
   /// From backend API or SQLite DB map
@@ -44,6 +46,9 @@ class ProductModel {
           : null,
       category: json['category'],
       description: json['description'],
+      tags: json['tags'] != null
+          ? json['tags'].toString().split(',').where((t) => t.isNotEmpty).toList()
+          : [],
     );
   }
 
@@ -58,6 +63,7 @@ class ProductModel {
       'image_path': image,
       'brandName': brandName,
       'description': description ?? '',
+      'tags': tags.join(','),
     };
   }
 }

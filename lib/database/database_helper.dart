@@ -19,7 +19,7 @@ class DatabaseHelper {
 
     return await openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -46,6 +46,9 @@ class DatabaseHelper {
     if (oldVersion < 5) {
       await db.execute("ALTER TABLE stock_exits ADD COLUMN synced_at TEXT");
     }
+    if (oldVersion < 6) {
+      await db.execute("ALTER TABLE products ADD COLUMN tags TEXT");
+    }
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -66,7 +69,8 @@ class DatabaseHelper {
         quantity INTEGER DEFAULT 0,
         image_path TEXT,
         brandName TEXT,
-        description TEXT
+        description TEXT,
+        tags TEXT
       )
     ''');
 

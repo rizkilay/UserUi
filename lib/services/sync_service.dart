@@ -72,6 +72,7 @@ class SyncService {
               quantity: adjustedQty,
               category: product.category,
               description: product.description,
+              tags: product.tags,
             );
           }
           products.add(product);

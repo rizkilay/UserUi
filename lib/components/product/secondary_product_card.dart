@@ -7,7 +7,7 @@ class SecondaryProductCard extends StatelessWidget {
   const SecondaryProductCard({
     super.key,
     required this.image,
-    required this.category,
+    this.category,
     required this.title,
     required this.price,
     this.priceAfetDiscount,
@@ -16,7 +16,8 @@ class SecondaryProductCard extends StatelessWidget {
     this.press,
     this.style,
   });
-  final String image, category, title;
+  final String image, title;
+  final String? category;
   final double price;
   final double? priceAfetDiscount;
   final int? dicountpercent;
@@ -74,7 +75,7 @@ class SecondaryProductCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    category.toUpperCase(),
+                    category?.toUpperCase() ?? '',
                     style: Theme.of(context)
                         .textTheme
                         .bodyMedium!
