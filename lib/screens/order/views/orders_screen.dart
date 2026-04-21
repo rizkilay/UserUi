@@ -78,7 +78,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
       if (query.isEmpty) {
         filteredProducts = List.from(products);
       } else {
-        final lowerQuery = query.toLowerCase();
+        final lowerQuery = query.trim().toLowerCase();
         filteredProducts = products.where((product) {
           final title = product.title.toLowerCase();
           final brand = product.brandName?.toLowerCase() ?? "";
