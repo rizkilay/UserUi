@@ -56,7 +56,7 @@ class _EntryPointState extends State<EntryPoint> {
         // pinned: true,
         // floating: true,
         // snap: true,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        backgroundColor: Colors.white,
         leading: const SizedBox(),
         leadingWidth: 0,
         centerTitle: false,

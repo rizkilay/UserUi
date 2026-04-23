@@ -156,7 +156,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: blackColor10),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
