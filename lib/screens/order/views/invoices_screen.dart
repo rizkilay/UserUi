@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:shop/constants.dart';
 import 'package:shop/database/exit_dao.dart';
 import 'package:shop/models/stock_exit.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:shop/theme/input_decoration_theme.dart';
 
 class InvoicesScreen extends StatefulWidget {
   const InvoicesScreen({super.key});
@@ -17,6 +19,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   List<StockExit> _filteredInvoices = [];
   bool _isLoading = true;
   final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -29,6 +32,7 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
   void dispose() {
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
+    _searchFocusNode.dispose();
     super.dispose();
   }
 
@@ -75,8 +79,25 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            _buildHeader(context),
-            _buildSearchBar(context),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Column(
+                children: [
+                  _buildHeader(context),
+                  _buildSearchBar(context),
+                ],
+              ),
+            ),
             Expanded(
               child: _isLoading
                   ? const Center(child: CircularProgressIndicator())
@@ -127,19 +148,31 @@ class _InvoicesScreenState extends State<InvoicesScreen> {
 
   Widget _buildSearchBar(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: defaultPadding),
-      child: TextFormField(
-        controller: _searchController,
-        decoration: InputDecoration(
-          hintText: "Recherche",
-          prefixIcon: const Icon(Icons.search, size: 20),
-          filled: true,
-          fillColor: Colors.grey.withOpacity(0.05),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Form(
+        child: TextFormField(
+          controller: _searchController,
+          focusNode: _searchFocusNode,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: "Recherche",
+            filled: false,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 8,
+            ),
+            border: secodaryOutlineInputBorder(context),
+            enabledBorder: secodaryOutlineInputBorder(context),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: SvgPicture.asset(
+                "assets/icons/Search.svg",
+                height: 20,
+                color: Theme.of(context).iconTheme.color!.withOpacity(0.3),
+              ),
+            ),
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 10),
         ),
       ),
     );
