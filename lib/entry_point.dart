@@ -166,7 +166,7 @@ class _EntryPointState extends State<EntryPoint> {
           // selectedLabelStyle: TextStyle(color: primaryColor),
           selectedFontSize: 12,
           selectedItemColor: primaryColor,
-          unselectedItemColor: Colors.black54,
+          unselectedItemColor: Colors.black87,
           unselectedFontSize: 12,
           showUnselectedLabels: true,
           items: [
