@@ -40,7 +40,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   List<ProductModel> products = [];
   List<ProductModel> filteredProducts = [];
   bool isLoading = true;
-  List<ProductModel> soldProducts = [];
+  List<Map<String, dynamic>> selectedItems = [];
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   String selectedClient = "Client";
@@ -48,7 +48,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   bool isRecordingSale = false;
 
   double _calculateTotal() {
-    return soldProducts.fold(0.0, (sum, item) => sum + (item.priceAfetDiscount ?? item.price));
+    return selectedItems.fold(0.0, (sum, item) => sum + (item['price'] * item['quantity']));
   }
 
   @override
@@ -134,7 +134,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
   Future<void> recordAllSales() async {
-    if (soldProducts.isEmpty) {
+    if (selectedItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Aucun produit sélectionné.')),
       );
@@ -146,26 +146,18 @@ class _OrdersScreenState extends State<OrdersScreen> {
     int successCount = 0;
     try {
       final String uuid = generateShortUuid();
+      // Distribute reduction proportionally
+      double totalBeforeReduction = _calculateTotal();
 
-      // Grouper les produits par ID pour éviter les doublons dans la DB
-      Map<int, Map<String, dynamic>> grouped = {};
-      for (var p in soldProducts) {
-        if (grouped.containsKey(p.id)) {
-          grouped[p.id]!['quantity'] += 1;
-          grouped[p.id]!['totalAmount'] += (p.priceAfetDiscount ?? p.price);
-        } else {
-          grouped[p.id] = {
-            'product': p,
-            'quantity': 1,
-            'totalAmount': (p.priceAfetDiscount ?? p.price),
-          };
-        }
-      }
-
-      for (var item in grouped.values) {
+      for (var item in selectedItems) {
         final ProductModel product = item['product'];
         final int qty = item['quantity'];
-        final double amount = item['totalAmount'];
+        double amount = item['price'] * qty;
+
+        if (totalBeforeReduction > 0 && reduction > 0) {
+          double itemReduction = reduction * (amount / totalBeforeReduction);
+          amount -= itemReduction;
+        }
 
         // Save locally only
         await _exitDao.insert(StockExit(
@@ -182,7 +174,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
       if (mounted) {
         setState(() {
-          soldProducts.clear();
+          selectedItems.clear();
+          reduction = 0.0;
           isRecordingSale = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
@@ -207,7 +200,17 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   void _onProductClicked(ProductModel product) {
     setState(() {
-      soldProducts.add(product);
+      final existingIndex = selectedItems.indexWhere((item) => item['product'].id == product.id);
+      if (existingIndex != -1) {
+        selectedItems[existingIndex]['quantity'] += 1;
+      } else {
+        selectedItems.add({
+          'product': product,
+          'quantity': 1,
+          'price': product.priceAfetDiscount ?? product.price,
+        });
+      }
+
       // Diminuer la quantité localement dans les deux listes
       final idx = products.indexWhere((p) => p.id == product.id);
       if (idx != -1) {
@@ -243,7 +246,9 @@ class _OrdersScreenState extends State<OrdersScreen> {
 
   void _cancelSelection() {
     setState(() {
-      for (var soldItem in soldProducts) {
+      for (var item in selectedItems) {
+        final ProductModel soldItem = item['product'];
+        final int qty = item['quantity'];
         final idx = products.indexWhere((p) => p.id == soldItem.id);
         if (idx != -1) {
           final restoredProduct = ProductModel(
@@ -254,7 +259,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             price: products[idx].price,
             priceAfetDiscount: products[idx].priceAfetDiscount,
             dicountpercent: products[idx].dicountpercent,
-            quantity: (products[idx].quantity ?? 0) + 1,
+            quantity: (products[idx].quantity ?? 0) + qty,
             category: products[idx].category,
             description: products[idx].description,
             tags: products[idx].tags,
@@ -267,7 +272,8 @@ class _OrdersScreenState extends State<OrdersScreen> {
           }
         }
       }
-      soldProducts.clear();
+      selectedItems.clear();
+      reduction = 0.0;
     });
   }
 
@@ -358,7 +364,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text("Commandes", style: Theme.of(context).textTheme.titleSmall,),
-                Text("${soldProducts.length} produits", style: const TextStyle(color: Colors.grey, fontSize: 13)),
+                Text("${selectedItems.length} produits", style: const TextStyle(color: Colors.grey, fontSize: 13)),
               ],
             ),
           ),
@@ -371,7 +377,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
             child: Row(
               children: [
                 Text(
-                  soldProducts.isNotEmpty ? "${_calculateTotal().toStringAsFixed(0)} F" : "0 F",
+                  selectedItems.isNotEmpty ? "${_calculateTotal().toStringAsFixed(0)} F" : "0 F",
                   style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                 ),
               ],
@@ -416,13 +422,16 @@ class _OrdersScreenState extends State<OrdersScreen> {
   }
 
 Widget _buildActionButtons() {
-  bool hasItems = soldProducts.isNotEmpty;
+  bool hasItems = selectedItems.isNotEmpty;
 
   return Padding(
     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
     child: Row(
       children: [
-        _infoTag("${soldProducts.length} Article(s)", Icons.shopping_bag_outlined),
+        GestureDetector(
+          onTap: hasItems ? () => _showBasketManager(context) : null,
+          child: _infoTag("${selectedItems.length} Article(s)", Icons.shopping_bag_outlined),
+        ),
         const Spacer(),
         
         // Animation de l'apparition du bouton d'annulation
@@ -546,30 +555,14 @@ Widget _buildActionButtons() {
                   ),
                   const SizedBox(height: 20),
 
-                  /// Subtotal
-                  // Display each selected product with its price
-                  ...(() {
-                    Map<int, Map<String, dynamic>> grouped = {};
-                    for (var p in soldProducts) {
-                      if (grouped.containsKey(p.id)) {
-                        grouped[p.id]!['quantity'] += 1;
-                        grouped[p.id]!['totalAmount'] += (p.priceAfetDiscount ?? p.price);
-                      } else {
-                        grouped[p.id] = {
-                          'product': p,
-                          'quantity': 1,
-                          'totalAmount': (p.priceAfetDiscount ?? p.price),
-                        };
-                      }
-                    }
-                    return grouped.values.map((item) {
+                  ...selectedItems.map((item) {
                       final ProductModel p = item['product'];
                       final int qty = item['quantity'];
-                      final double total = item['totalAmount'];
+                      final double price = item['price'];
+                      final double total = price * qty;
                       final title = qty > 1 ? "${p.title} (x$qty)" : "${p.title}";
                       return _summaryRow(title, "${total.toStringAsFixed(0)} F");
-                    }).toList();
-                  })(),
+                    }).toList(),
 
                   const SizedBox(height: 12),
 
@@ -789,29 +782,137 @@ children: [
     );
   }
 
-  // Helper to display list of selected products in the order summary modal
-  List<Widget> _buildSoldProductsList() {
-    Map<int, Map<String, dynamic>> grouped = {};
-    for (var p in soldProducts) {
-      if (grouped.containsKey(p.id)) {
-        grouped[p.id]!['quantity'] += 1;
-        grouped[p.id]!['totalAmount'] += (p.priceAfetDiscount ?? p.price);
-      } else {
-        grouped[p.id] = {
-          'product': p,
-          'quantity': 1,
-          'totalAmount': (p.priceAfetDiscount ?? p.price),
-        };
-      }
-    }
-    return grouped.values.map((item) {
-      final ProductModel p = item['product'];
-      final int qty = item['quantity'];
-      final double total = item['totalAmount'];
-      final title = qty > 1 ? "${p.title} (x$qty)" : "${p.title}";
-      return _summaryRow(title, "${total.toStringAsFixed(0)} F");
-    }).toList();
+  void _showBasketManager(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Modifier les articles",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.4),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: selectedItems.length,
+                      separatorBuilder: (context, index) => const Divider(),
+                      itemBuilder: (context, index) {
+                        final item = selectedItems[index];
+                        final ProductModel p = item['product'];
+                        return ListTile(
+                          title: Text(p.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                          subtitle: Row(
+                            children: [
+                              // Quantity editing
+                              IconButton(
+                                icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                                onPressed: () {
+                                  if (item['quantity'] > 1) {
+                                    setModalState(() => item['quantity']--);
+                                    setState(() {}); // Update main screen
+                                  }
+                                },
+                              ),
+                              Text("${item['quantity']}", style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              IconButton(
+                                icon: const Icon(Icons.add_circle_outline, color: Colors.green),
+                                onPressed: () {
+                                  setModalState(() => item['quantity']++);
+                                  setState(() {}); // Update main screen
+                                },
+                              ),
+                              const Spacer(),
+                              // Price editing
+                              GestureDetector(
+                                onTap: () => _showItemPriceDialog(context, index, setModalState),
+                                child: Text(
+                                  "${item['price'].toStringAsFixed(0)} F",
+                                  style: const TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
+                          ),
+                          trailing: IconButton(
+                            icon: const Icon(Icons.delete_outline, color: Colors.grey),
+                            onPressed: () {
+                              setModalState(() {
+                                selectedItems.removeAt(index);
+                              });
+                              setState(() {}); // Update main screen
+                              if (selectedItems.isEmpty) Navigator.pop(context);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF10B981),
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text("OK", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          }
+        );
+      },
+    );
   }
+
+  void _showItemPriceDialog(BuildContext context, int index, StateSetter setModalState) {
+    TextEditingController controller = TextEditingController(text: selectedItems[index]['price'].toString());
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Modifier le prix"),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(hintText: "Prix unitaire"),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
+          TextButton(
+            onPressed: () {
+              setModalState(() {
+                selectedItems[index]['price'] = double.tryParse(controller.text) ?? selectedItems[index]['price'];
+              });
+              setState(() {}); // Update main screen
+              Navigator.pop(context);
+            },
+            child: const Text("OK"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Remove the old _buildSoldProductsList helper as it is replaced
 
 void _showClientDialog(BuildContext context) {
     TextEditingController clientController = TextEditingController(text: selectedClient);
