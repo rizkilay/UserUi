@@ -280,6 +280,7 @@ class _OrdersScreenState extends State<OrdersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Column(
           children: [
@@ -521,7 +522,7 @@ Widget _buildActionButtons() {
     builder: (context) {
       return Padding(
         padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom,
+          bottom: 0,
           left: 16,
           right: 16,
           top: 24,
@@ -795,7 +796,7 @@ children: [
           builder: (context, setModalState) {
             return Padding(
               padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
+                bottom: 0,
                 left: 16,
                 right: 16,
                 top: 24,
