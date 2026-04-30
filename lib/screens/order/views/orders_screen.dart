@@ -886,29 +886,40 @@ children: [
 
   void _showItemPriceDialog(BuildContext context, int index, StateSetter setModalState) {
     TextEditingController controller = TextEditingController(text: selectedItems[index]['price'].toString());
+    FocusNode focusNode = FocusNode();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Modifier le prix"),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(hintText: "Prix unitaire"),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
-          TextButton(
-            onPressed: () {
-              setModalState(() {
-                selectedItems[index]['price'] = double.tryParse(controller.text) ?? selectedItems[index]['price'];
-              });
-              setState(() {}); // Update main screen
-              Navigator.pop(context);
-            },
-            child: const Text("OK"),
+      builder: (context) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (focusNode.canRequestFocus) {
+            focusNode.requestFocus();
+            controller.selection = TextSelection(baseOffset: 0, extentOffset: controller.text.length);
+          }
+        });
+        return AlertDialog(
+          title: const Text("Modifier le prix"),
+          content: TextField(
+            controller: controller,
+            focusNode: focusNode,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            decoration: const InputDecoration(hintText: "Prix unitaire"),
           ),
-        ],
-      ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text("Annuler")),
+            TextButton(
+              onPressed: () {
+                setModalState(() {
+                  selectedItems[index]['price'] = double.tryParse(controller.text) ?? selectedItems[index]['price'];
+                });
+                setState(() {}); // Update main screen
+                Navigator.pop(context);
+              },
+              child: const Text("OK"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -949,16 +960,25 @@ void _showClientDialog(BuildContext context) {
 
 void _showReductionDialog(BuildContext context) {
     TextEditingController reductionController = TextEditingController(text: reduction.toString());
+    FocusNode reductionFocusNode = FocusNode();
     showDialog(
       context: context,
       builder: (context) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (reductionFocusNode.canRequestFocus) {
+            reductionFocusNode.requestFocus();
+            reductionController.selection = TextSelection(baseOffset: 0, extentOffset: reductionController.text.length);
+          }
+        });
         return AlertDialog(
           backgroundColor: Colors.white, // Fond blanc
           surfaceTintColor: Colors.transparent, // Désactive la teinte Material 3
           title: Text("Modifier la réduction"),
           content: TextField(
             controller: reductionController,
-            keyboardType: TextInputType.number,
+            focusNode: reductionFocusNode,
+            autofocus: true,
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             decoration: InputDecoration(hintText: "Montant de réduction"),
           ),
           actions: [
