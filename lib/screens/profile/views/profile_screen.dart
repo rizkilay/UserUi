@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // Pour masquer la barre d'état (optionnel)
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../constants.dart'; // Assurez-vous que ce chemin est correct
 import '../../../services/sync_service.dart'; // Assurez-vous que ce chemin est correct
 
@@ -46,7 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildUpgradeCard(),
             _buildBronzeProgressCard(),
             _buildMenuSection(
-              title: "FONCTIONS PRINCIPALES",
+              title: "PARAMÈTRES ET SÉCURITÉ",
               items: [
                 _MenuItem(
                   icon: Icons.settings,
@@ -59,21 +60,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   title: "Confidentialité",
                   color: const Color(0xFFFFEBEE),
                   iconColor: const Color(0xFFC62828),
-                ),
-                // Exemple d'intégration de votre fonction de synchronisation
-                _MenuItem(
-                  icon: Icons.sync,
-                  title: "Synchroniser",
-                  color: const Color(0xFFE0F7FA),
-                  iconColor: const Color(0xFF006064),
-                  onTap: _isSyncing ? null : _handleSync,
-                  trailing: _isSyncing
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.arrow_forward_ios, size: 16),
                 ),
               ],
             ),
@@ -103,18 +89,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-  Widget _buildUpgradeCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
+Widget _buildUpgradeCard() {
+  return Container(
+    margin: const EdgeInsets.symmetric(horizontal: 16),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(4),
@@ -122,32 +108,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   color: Color(0xFF1A73E8),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.star_rate, color: Colors.white, size: 14),
+                child: const Icon(
+                  Icons.storefront,
+                  color: Colors.white,
+                  size: 14,
+                ),
               ),
               const SizedBox(width: 8),
-              const Text(
-                "iCI LE NOM DE L'ENTREPRISE",
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontWeight: FontWeight.bold,fontSize: 14),
+              const Expanded(
+                child: Text(
+                  "ICI LE NOM DE L'ENTREPRISE",
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
               ),
             ],
           ),
-          ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1A73E8),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20)),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              minimumSize: const Size(0, 36),
+        ),
+        const SizedBox(width: 8),
+        ElevatedButton(
+          onPressed: () {},
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF1A73E8),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text("Code"),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 8,
+            ),
+            minimumSize: const Size(0, 36),
           ),
-        ],
-      ),
-    );
-  }
+          child: const Text("Code"),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildBronzeProgressCard() {
     return Container(
@@ -159,22 +161,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            width: 60,
-            height: 60,
-            decoration: const BoxDecoration(
-              color: Color(0xFFCD7F32), // Bronze
-              shape: BoxShape.circle,
-            ),
-            alignment: Alignment.center,
-            child: const Text(
-              "1",
-              style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24),
-            ),
-          ),
+Container(
+  width: 60,
+  height: 60,
+  decoration: const BoxDecoration(
+    color: Color.fromARGB(255, 241, 241, 241), // Bronze
+    shape: BoxShape.circle,
+  ),
+  alignment: Alignment.center,
+  child: SvgPicture.asset(
+    "assets/icons/Profile.svg",
+    height: 24,
+    colorFilter: const ColorFilter.mode(Colors.black87, BlendMode.srcIn),
+  ),
+),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -189,9 +189,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 Row(
                   children: [
-                    _buildStatItem(Icons.bolt, "10"),
-                    const SizedBox(width: 8),
-                    _buildStatItem(Icons.bolt, "250", color: const Color(0xFFFBC02D)), // Or
+                    _buildStatItem(Icons.bolt, "Code : 10"),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -227,7 +225,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         widthFactor: 0.1, // 0/30 => ~10% pour démo
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF43A047), // Vert vif
+            color: const Color.fromARGB(255, 253, 253, 253), // Vert vif
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -272,7 +270,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         foregroundColor: const Color(0xFF1A73E8),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 0,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       ),
       child: const Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -281,7 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             "Nous contacter",
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          Icon(Icons.arrow_forward_ios, size: 16),
+          Icon(Icons.support_agent, size: 22),
         ],
       ),
     );
@@ -323,7 +321,7 @@ class _MenuItem extends StatelessWidget {
         ),
         child: Icon(icon, color: iconColor),
       ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+      title: Text(title, style: Theme.of(context).textTheme.titleSmall),
       subtitle: subtitle != null ? Text(subtitle!, style: const TextStyle(fontSize: 10)) : null,
       trailing: _buildTrailing(context),
     );
