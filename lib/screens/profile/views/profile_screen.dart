@@ -39,7 +39,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
 
     return Scaffold(
-      backgroundColor: Colors.grey[100], // Fond légèrement grisé
+      backgroundColor: Color(0xFFE8ECE9), // Fond légèrement grisé
       body: SingleChildScrollView(
         child: Column(
           children: [

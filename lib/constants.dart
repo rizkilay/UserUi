@@ -62,7 +62,7 @@ const Color successColor = Color(0xFF2ED573);
 const Color warningColor = Color(0xFFFFBE21);
 const Color errorColor = Color(0xFFEA5B5B);
 
-const Color backgroundColor = Color(0xFFEFF3EE);
+const Color backgroundColor = Color(0xFFE8ECE9);
 
 const double defaultPadding = 16.0;
 const double defaultBorderRadious = 12.0;
