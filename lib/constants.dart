@@ -50,12 +50,7 @@ const Color whileColor5 = Color(0xFF0D0D0D);
 const Color greyColor = Color(0xFFB8B5C3);
 const Color lightGreyColor = Color(0xFFF8F8F9);
 const Color darkGreyColor = Color(0xFF1C1C25);
-// const Color greyColor80 = Color(0xFFC6C4CF);
-// const Color greyColor60 = Color(0xFFD4D3DB);
-// const Color greyColor40 = Color(0xFFE3E1E7);
-// const Color greyColor20 = Color(0xFFF1F0F3);
-// const Color greyColor10 = Color(0xFFF8F8F9);
-// const Color greyColor5 = Color(0xFFFBFBFC);
+
 
 const Color purpleColor = Color(0xFF7B61FF);
 const Color successColor = Color(0xFF2ED573);
@@ -67,17 +62,3 @@ const Color backgroundColor = Color(0xFFE8ECE9);
 const double defaultPadding = 16.0;
 const double defaultBorderRadious = 12.0;
 const Duration defaultDuration = Duration(milliseconds: 300);
-
-final passwordValidator = MultiValidator([
-  RequiredValidator(errorText: 'Password is required'),
-  MinLengthValidator(8, errorText: 'password must be at least 8 digits long'),
-  PatternValidator(r'(?=.*?[#?!@$%^&*-])',
-      errorText: 'passwords must have at least one special character')
-]);
-
-final emaildValidator = MultiValidator([
-  RequiredValidator(errorText: 'Email is required'),
-  EmailValidator(errorText: "Enter a valid email address"),
-]);
-
-const pasNotMatchErrorText = "passwords do not match";
