@@ -105,25 +105,34 @@ class _DepenseScreenState extends State<DepenseScreen> {
                     Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "${formatter.format(totalAmount)} Fcfa",
-                                      style: const TextStyle(
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF2C3E50)),
-                                    ),
-                                    const Text("Total des dépenses",
-                                        style: TextStyle(
-                                            fontSize: 11, color: Color(0xFF3664FA))),
-                                  ],
-                                ),
-                              ],
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.grey[200]!),
+                              ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "${formatter.format(totalAmount)} Fcfa",
+                                        style: const TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF2C3E50)),
+                                      ),
+                                      const Text("Total des dépenses",
+                                          style: TextStyle(
+                                              fontSize: 11, color: Color(0xFF3664FA))),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                             const SizedBox(height: 24),
                             Text(

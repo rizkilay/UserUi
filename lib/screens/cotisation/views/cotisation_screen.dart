@@ -260,34 +260,43 @@ void _showStatus(BuildContext context, String message, {bool isError = false}) {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "${formatter.format(totalAmount)} Fcfa",
-                                    style: const TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        color: Color(0xFF2C3E50)),
-                                  ),
-                                  const Text("Solde total disponible",
-                                      style: TextStyle(
-                                          fontSize: 12,
-                                          color: Color(0xFF3664FA))),
-                                ],
-                              ),
-                              IconButton.filled(
-                                onPressed: _showWithdrawForm,
-                                icon: const Icon(Icons.remove_circle_outline),
-                                style: IconButton.styleFrom(
-                                  backgroundColor: const Color(0xFFF2A945),
-                                  foregroundColor: Colors.white,
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.grey[200]!),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "${formatter.format(totalAmount)} Fcfa",
+                                      style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                          color: Color(0xFF2C3E50)),
+                                    ),
+                                    const Text("Solde total disponible",
+                                        style: TextStyle(
+                                            fontSize: 12,
+                                            color: Color(0xFF3664FA))),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                IconButton.filled(
+                                  onPressed: _showWithdrawForm,
+                                  icon: const Icon(Icons.remove_circle_outline),
+                                  style: IconButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF2A945),
+                                    foregroundColor: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 24),
                           Text(
