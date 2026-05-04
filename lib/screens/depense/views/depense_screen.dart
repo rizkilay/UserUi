@@ -102,9 +102,7 @@ class _DepenseScreenState extends State<DepenseScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // --- TOP SECTION (Stats) ---
-                      Padding(
-                        padding: const EdgeInsets.all(defaultPadding),
-                        child: Column(
+                    Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
@@ -218,8 +216,6 @@ class _DepenseScreenState extends State<DepenseScreen> {
                             ),
                           ],
                         ),
-                      ),
-
                       const SizedBox(height: 32),
                       Text(
                         "Détails des dépenses",
@@ -379,7 +375,7 @@ Widget _buildMiniStatCard(String label, String amount, Color accentColor, IconDa
               Text(
                 "FCFA", // Montant
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 9,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87, // Noir doux pour le montant
                 ),

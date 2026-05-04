@@ -580,7 +580,7 @@ Widget _buildMiniStatCard(String label, String amount, Color accentColor, IconDa
               Text(
                 "FCFA", // Montant
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 9,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87, // Noir doux pour le montant
                 ),
