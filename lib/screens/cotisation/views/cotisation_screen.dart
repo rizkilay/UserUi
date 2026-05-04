@@ -181,6 +181,7 @@ void _showStatus(BuildContext context, String message, {bool isError = false}) {
     ),
   );
 }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -212,7 +213,8 @@ void _showStatus(BuildContext context, String message, {bool isError = false}) {
                   }
 
                   final transactions = snapshot.data ?? [];
-                  final cotisations = transactions.whereType<Cotisation>().toList();
+                  final cotisations =
+                      transactions.whereType<Cotisation>().toList();
 
                   double totalAmount = 0;
                   double monthlyTotal = 0;
@@ -254,235 +256,278 @@ void _showStatus(BuildContext context, String message, {bool isError = false}) {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
+                      // --- TOP SECTION (Stats) ---
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            "${formatter.format(totalAmount)} Fcfa",
-                            style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF2C3E50)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "${formatter.format(totalAmount)} Fcfa",
+                                    style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF2C3E50)),
+                                  ),
+                                  const Text("Solde total disponible",
+                                      style: TextStyle(
+                                          fontSize: 12,
+                                          color: Color(0xFF3664FA))),
+                                ],
+                              ),
+                              IconButton.filled(
+                                onPressed: _showWithdrawForm,
+                                icon: const Icon(Icons.remove_circle_outline),
+                                style: IconButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF2A945),
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                          const Text("Solde total disponible",
-                              style: TextStyle(fontSize: 12, color: Color(0xFF3664FA))),
+                          const SizedBox(height: 24),
+                          Text(
+                            "Cotisation (ce mois)",
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.grey[200]!),
+                              boxShadow: [
+                                BoxShadow(
+                                  color:
+                                      const Color(0xFF2C3E50).withOpacity(0.08),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 10),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        debutText.toUpperCase(),
+                                        style: TextStyle(
+                                          color: Colors.blueGrey[300],
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: 1.1,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        "${formatter.format(monthlyTotal)} FCFA",
+                                        style: const TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w800,
+                                          color: Color(0xFF1A1A1A),
+                                          letterSpacing: -0.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF0F4F8),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Image.asset(
+                                    'assets/images/assets.png',
+                                    width: 32,
+                                    height: 32,
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _buildMiniStatCard(
+                                  "Caisse",
+                                  formatter.format(caisseAmount),
+                                  const Color(0xFFFF6B00),
+                                  Icons.account_balance_wallet_outlined,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildMiniStatCard(
+                                  "Finance",
+                                  formatter.format(financeurAmount),
+                                  const Color(0xFFEBC12F),
+                                  Icons.trending_up_rounded,
+                                ),
+                              ),
+                            ],
+                          ),
                         ],
                       ),
-IconButton.filled(
-  onPressed: _showWithdrawForm,
-  icon: const Icon(Icons.remove_circle_outline),
-  style: IconButton.styleFrom(
-    backgroundColor: const Color(0xFFF2A945),
-    foregroundColor: Colors.white,
-  ),
-),
-                    ],
-                  ),
-
-                      const SizedBox(height: 24),
-
-                      Text(
-                        "Cotisation (ce mois)",
-                        style: Theme.of(context).textTheme.titleSmall,
-                      ),
-
-                      const SizedBox(height: 12),
-
-Container(
-  width: double.infinity,
-  padding: const EdgeInsets.all(20), // Padding augmenté pour laisser respirer
-  decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(16), 
-    border: Border.all(color: Colors.grey[200]!),// Plus arrondi = plus moderne
-    boxShadow: [
-      BoxShadow(
-        color: const Color(0xFF2C3E50).withOpacity(0.08),
-        blurRadius: 20,
-        offset: const Offset(0, 10),
-      ),
-    ],
-  ),
-  child: Row(
-    children: [
-      // Section Texte
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              debutText.toUpperCase(), // Passage en majuscules pour un look "label"
-              style: TextStyle(
-                color: Colors.blueGrey[300],
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.1,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              "${formatter.format(monthlyTotal)} FCFA",
-              style: const TextStyle(
-                fontSize: 22, // Légèrement plus grand
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A), // Noir plus profond
-                letterSpacing: -0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-      
-      // Section Icône stylisée
-      Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF0F4F8), // Fond d'icône léger
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Image.asset(
-          'assets/images/assets.png',
-          width: 32,
-          height: 32,
-          fit: BoxFit.contain,
-        ),
-      ),
-    ],
-  ),
-),
-
-                      const SizedBox(height: 16),
-Row(
-  children: [
-    Expanded(
-      child: _buildMiniStatCard(
-        "Caisse",
-        formatter.format(caisseAmount),
-        const Color(0xFFFF6B00), // Orange
-        Icons.account_balance_wallet_outlined, // Icône de portefeuille fine
-      ),
-    ),
-    const SizedBox(width: 12),
-    Expanded(
-      child: _buildMiniStatCard(
-        "Finance",
-        formatter.format(financeurAmount),
-        const Color(0xFFEBC12F), // Jaune (légèrement ajusté pour la lisibilité)
-        Icons.trending_up_rounded, // Icône de tendance/croissance
-      ),
-    ),
-  ],
-),
 
                       const SizedBox(height: 32),
 
                       Text(
                         "Détails des cotisations",
                         style: Theme.of(context).textTheme.titleSmall,
-                      ),
-
-                      const SizedBox(height: 12),
-
-                      if (cotisations.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Text(
-                            "Aucune cotisation enregistrée.",
-                            style: TextStyle(color: Colors.grey),
+                      ),                      
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            topRight: Radius.circular(12),
                           ),
-                        )
-                      else
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: transactions.length,
-                          separatorBuilder: (context, index) =>
-                              const Divider(),
-                          itemBuilder: (context, index) {
-                            final isWithdrawal = transactions[index] is CotisationWithdrawal;
-                            final transaction = transactions[index];
-                            final String dateString = isWithdrawal 
-                                ? (transaction as CotisationWithdrawal).date 
-                                : (transaction as Cotisation).date;
-                            final String note = isWithdrawal 
-                                ? (transaction as CotisationWithdrawal).motif ?? '' 
-                                : (transaction as Cotisation).note ?? '';
-                            final double amount = isWithdrawal 
-                                ? (transaction as CotisationWithdrawal).amount 
-                                : (transaction as Cotisation).amount;
-                            final String source = isWithdrawal 
-                                ? (transaction as CotisationWithdrawal).source ?? '' 
-                                : (transaction as Cotisation).source;
-
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: (isWithdrawal ? Colors.red : const Color(0xFFF2A945))
-                                      .withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  isWithdrawal ? Icons.upload : Icons.download,
-                                  color: isWithdrawal ? Colors.red : const Color(0xFFF2A945),
-                                ),
-                              ),
-                              title: Text(
-                                isWithdrawal 
-                                    ? (source == 'caisse' ? 'Retrait Caisse' : 'Retrait Financeur')
-                                    : _getCotisationTitle(transaction as Cotisation),
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    DateFormat('dd MMM yyyy', 'fr_FR')
-                                            .format(DateTime.parse(dateString)),
-                                    style: const TextStyle(fontSize: 12),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    note,
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: Colors.grey,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              trailing: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    "${formatter.format(amount)} Fcfa",
-                                    style: TextStyle(
-                                      color: Color(0xFF2C3E50),
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    isWithdrawal ? "Retrait" : "Dépôt",
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      color: isWithdrawal ? Colors.red[300] : Colors.green[300],
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
+                          border: Border.all(color: Colors.grey[200]!),
                         ),
+                        margin: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.all(defaultPadding),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 20),
+                            if (cotisations.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 40),
+                                child: Center(
+                                  child: Text(
+                                    "Aucune cotisation enregistrée.",
+                                    style: TextStyle(color: Colors.grey),
+                                  ),
+                                ),
+                              )
+                            else
+                              ListView.separated(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                itemCount: transactions.length,
+                                separatorBuilder: (context, index) =>
+                                    const Divider(),
+                                itemBuilder: (context, index) {
+                                  final isWithdrawal = transactions[index]
+                                      is CotisationWithdrawal;
+                                  final transaction = transactions[index];
+                                  final String dateString = isWithdrawal
+                                      ? (transaction as CotisationWithdrawal)
+                                          .date
+                                      : (transaction as Cotisation).date;
+                                  final String note = isWithdrawal
+                                      ? (transaction as CotisationWithdrawal)
+                                              .motif ??
+                                          ''
+                                      : (transaction as Cotisation).note ?? '';
+                                  final double amount = isWithdrawal
+                                      ? (transaction as CotisationWithdrawal)
+                                          .amount
+                                      : (transaction as Cotisation).amount;
+                                  final String source = isWithdrawal
+                                      ? (transaction as CotisationWithdrawal)
+                                              .source ??
+                                          ''
+                                      : (transaction as Cotisation).source;
+
+                                  return ListTile(
+                                    contentPadding: EdgeInsets.zero,
+                                    leading: Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: (isWithdrawal
+                                                ? Colors.red
+                                                : const Color(0xFFF2A945))
+                                            .withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        isWithdrawal
+                                            ? Icons.upload
+                                            : Icons.download,
+                                        color: isWithdrawal
+                                            ? Colors.red
+                                            : const Color(0xFFF2A945),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      isWithdrawal
+                                          ? (source == 'caisse'
+                                              ? 'Retrait Caisse'
+                                              : 'Retrait Financeur')
+                                          : _getCotisationTitle(
+                                              transaction as Cotisation),
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          DateFormat('dd MMM yyyy', 'fr_FR')
+                                              .format(DateTime.parse(
+                                                  dateString)),
+                                          style: const TextStyle(fontSize: 12),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          note,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    trailing: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          "${formatter.format(amount)} Fcfa",
+                                          style: const TextStyle(
+                                            color: Color(0xFF2C3E50),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          isWithdrawal ? "Retrait" : "Dépôt",
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: isWithdrawal
+                                                ? Colors.red[300]
+                                                : Colors.green[300],
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            const SizedBox(height: 60),
+                          ],
+                        ),
+                      ),
                     ],
                   );
                 },
@@ -500,7 +545,7 @@ Widget _buildMiniStatCard(String label, String amount, Color accentColor, IconDa
   final textColor = accentColor.withOpacity(0.8);      // Texte coloré mais doux
 
   return Container(
-    padding: const EdgeInsets.all(16), // Padding généreux
+    padding: const EdgeInsets.all(14), // Padding généreux
     decoration: BoxDecoration(
       color: backgroundColor, // Fond coloré clair
       borderRadius: BorderRadius.circular(12), // Bordures bien arrondies
@@ -531,11 +576,20 @@ Widget _buildMiniStatCard(String label, String amount, Color accentColor, IconDa
                   color: textColor, // Texte coloré doux
                 ),
               ),
+              const SizedBox(height: 2),
+              Text(
+                "FCFA", // Montant
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87, // Noir doux pour le montant
+                ),
+              ),
               const SizedBox(height: 2), // Petit espace
               Text(
-                "$amount FCFA", // Montant
+                "$amount", // Montant
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87, // Noir doux pour le montant
                 ),
