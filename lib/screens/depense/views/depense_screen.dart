@@ -136,7 +136,7 @@ class _DepenseScreenState extends State<DepenseScreen> {
                             ),
                             const SizedBox(height: 24),
                             Text(
-                              "Dépenses (Ce mois)",
+                              "Résumé des dépenses",
                               style: Theme.of(context).textTheme.titleSmall,
                             ),
                             const SizedBox(height: 12),
@@ -156,72 +156,76 @@ class _DepenseScreenState extends State<DepenseScreen> {
                                   ),
                                 ],
                               ),
-                              child: Row(
+                              child: Column(
                                 children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          debutText.toUpperCase(),
-                                          style: TextStyle(
-                                            color: Colors.blueGrey[300],
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                            letterSpacing: 1.1,
-                                          ),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              debutText.toUpperCase(),
+                                              style: TextStyle(
+                                                color: const Color(0xFF1E3A8A).withOpacity(0.7),//Colors.blueGrey[300],
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                                letterSpacing: 1.1,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              "${formatter.format(monthlyTotal)} FCFA",
+                                              style: const TextStyle(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.w800,
+                                                color: Color(0xFF1A1A1A),
+                                                letterSpacing: -0.5,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          "${formatter.format(monthlyTotal)} FCFA",
-                                          style: const TextStyle(
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.w800,
-                                            color: Color(0xFF1A1A1A),
-                                            letterSpacing: -0.5,
-                                          ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF0F4F8),
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
-                                      ],
-                                    ),
+                                        child: Image.asset(
+                                          'assets/images/expenses.png',
+                                          width: 32,
+                                          height: 32,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFF0F4F8),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Image.asset(
-                                      'assets/images/expenses.png',
-                                      width: 32,
-                                      height: 32,
-                                      fit: BoxFit.contain,
-                                    ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildMiniStatCard(
+                                          "Caisse",
+                                          formatter.format(caisseAmount),
+                                          const Color(0xFFFF6B00),
+                                          Icons.account_balance_wallet_outlined,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _buildMiniStatCard(
+                                          "Finance",
+                                          formatter.format(financeurAmount),
+                                          const Color(0xFFEBC12F),
+                                          Icons.trending_up_rounded,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildMiniStatCard(
-                                    "Caisse",
-                                    formatter.format(caisseAmount),
-                                    const Color(0xFFFF6B00),
-                                    Icons.account_balance_wallet_outlined,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildMiniStatCard(
-                                    "Finance",
-                                    formatter.format(financeurAmount),
-                                    const Color(0xFFEBC12F),
-                                    Icons.trending_up_rounded,
-                                  ),
-                                ),
-                              ],
                             ),
                           ],
                         ),
