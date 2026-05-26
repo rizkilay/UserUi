@@ -96,7 +96,8 @@ class ExitDao {
     final db = await DatabaseHelper.instance.database;
     await db.transaction((txn) async {
       // 1. Récupérer la sortie pour savoir quel produit et quelle quantité restaurer
-      final res = await txn.query('stock_exits', where: 'id = ?', whereArgs: [id]);
+      final res =
+          await txn.query('stock_exits', where: 'id = ?', whereArgs: [id]);
       if (res.isNotEmpty) {
         final exit = StockExit.fromMap(res.first);
 
@@ -117,7 +118,8 @@ class ExitDao {
     final db = await DatabaseHelper.instance.database;
     await db.transaction((txn) async {
       // 1. Récupérer toutes les sorties associées à cet UUID
-      final res = await txn.query('stock_exits', where: 'uuid = ?', whereArgs: [uuid]);
+      final res =
+          await txn.query('stock_exits', where: 'uuid = ?', whereArgs: [uuid]);
       for (var row in res) {
         final exit = StockExit.fromMap(row);
         // 2. Restaurer le stock pour chaque produit
@@ -145,7 +147,8 @@ class ExitDao {
 
   Future<double> getTotalSales() async {
     final db = await DatabaseHelper.instance.database;
-    final res = await db.rawQuery('SELECT IFNULL(SUM(amount), 0) as total FROM stock_exits');
+    final res = await db
+        .rawQuery('SELECT IFNULL(SUM(amount), 0) as total FROM stock_exits');
     final v = res.first['total'];
     if (v == null) return 0.0;
     if (v is int) return v.toDouble();
@@ -155,8 +158,10 @@ class ExitDao {
   Future<double> getTodaySales() async {
     final db = await DatabaseHelper.instance.database;
     final today = DateTime.now();
-    final start = DateTime(today.year, today.month, today.day).toIso8601String();
-    final end = DateTime(today.year, today.month, today.day, 23, 59, 59).toIso8601String();
+    final start =
+        DateTime(today.year, today.month, today.day).toIso8601String();
+    final end = DateTime(today.year, today.month, today.day, 23, 59, 59)
+        .toIso8601String();
     final res = await db.rawQuery(
       'SELECT IFNULL(SUM(amount), 0) as total FROM stock_exits WHERE created_at BETWEEN ? AND ?',
       [start, end],
@@ -171,7 +176,23 @@ class ExitDao {
     final db = await DatabaseHelper.instance.database;
     final now = DateTime.now();
     final start = DateTime(now.year, now.month, 1).toIso8601String();
-    final end = DateTime(now.year, now.month + 1, 0, 23, 59, 59).toIso8601String();
+    final end =
+        DateTime(now.year, now.month + 1, 0, 23, 59, 59).toIso8601String();
+    final res = await db.rawQuery(
+      'SELECT IFNULL(SUM(amount), 0) as total FROM stock_exits WHERE created_at BETWEEN ? AND ?',
+      [start, end],
+    );
+    final v = res.first['total'];
+    if (v == null) return 0.0;
+    if (v is int) return v.toDouble();
+    return v as double;
+  }
+
+  Future<double> getYearlySales() async {
+    final db = await DatabaseHelper.instance.database;
+    final now = DateTime.now();
+    final start = DateTime(now.year, 1, 1).toIso8601String();
+    final end = DateTime(now.year + 1, 1, 0, 23, 59, 59).toIso8601String();
     final res = await db.rawQuery(
       'SELECT IFNULL(SUM(amount), 0) as total FROM stock_exits WHERE created_at BETWEEN ? AND ?',
       [start, end],
@@ -198,13 +219,25 @@ class ExitDao {
     return res.first;
   }
 
+  Future<int> getDistinctProductsSold() async {
+    final db = await DatabaseHelper.instance.database;
+    final res = await db.rawQuery(
+      'SELECT COUNT(DISTINCT IFNULL(product_id, name)) as count FROM stock_exits',
+    );
+    final v = res.first['count'];
+    if (v == null) return 0;
+    if (v is int) return v;
+    return int.tryParse(v.toString()) ?? 0;
+  }
+
   Future<List<StockExit>> getUnsynced() async {
     final db = await DatabaseHelper.instance.database;
     final res = await db.query('stock_exits', where: 'is_synced = 0');
     return res.map((e) => StockExit.fromMap(e)).toList();
   }
 
-  Future<void> markAsSyncedWithTimestamp(List<int> ids, String timestamp) async {
+  Future<void> markAsSyncedWithTimestamp(
+      List<int> ids, String timestamp) async {
     if (ids.isEmpty) return;
     final db = await DatabaseHelper.instance.database;
     await db.update(
@@ -225,7 +258,7 @@ class ExitDao {
       final res = await db.query('stock_exits');
       return res.map((e) => StockExit.fromMap(e)).toList();
     }
-    
+
     // Une vente n'est pas sur le serveur si :
     // 1. Elle n'est pas encore synchronisée (is_synced = 0)
     // 2. OU elle a été synchronisée APRÈS le timestamp du snapshot serveur

@@ -19,8 +19,9 @@ class _HomeScreenState extends State<HomeScreen> {
   // Real metrics
   double todaySales = 0.0;
   double monthlySales = 0.0;
+  double yearlySales = 0.0;
   double totalExpenses = 0.0;
-  String topSellingProduct = "---";
+  int distinctProductsSold = 0;
   int outOfStockCount = 0;
   bool isLoading = true;
 
@@ -45,16 +46,18 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final today = await _exitDao.getTodaySales();
       final month = await _exitDao.getMonthlySales();
+      final year = await _exitDao.getYearlySales();
       final expenses = await _expenseDao.getMonthlyExpenses();
-      final topProduct = await _exitDao.getTopSellingProduct();
+      final distinctProducts = await _exitDao.getDistinctProductsSold();
       final outOfStock = await _productDao.getOutOfStockCount();
 
       if (mounted) {
         setState(() {
           todaySales = today;
           monthlySales = month;
+          yearlySales = year;
           totalExpenses = expenses;
-          topSellingProduct = topProduct != null ? topProduct['name'] : "Aucun";
+          distinctProductsSold = distinctProducts;
           outOfStockCount = outOfStock;
           isLoading = false;
         });
@@ -79,12 +82,20 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildTopCards(),
                 const SizedBox(height: defaultPadding),
-
                 _cardWrapper(
                   "Activité",
                   300,
                   _buildBarChart(),
-                  subtitle: "Ventes et dépenses",
+                  subtitle: "Période des ventes",
+                ),
+                const SizedBox(height: defaultPadding),
+                _metricCard(
+                  "Dépenses ce mois",
+                  "${NumberFormat.compact().format(totalExpenses)} XOF",
+                  Icons.account_balance_wallet,
+                  accentRed,
+                  isBlueGradient: true,
+                  
                 ),
               ],
             ),
@@ -101,16 +112,16 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Expanded(
               child: _metricCard(
-                "Top des ventes",
-                topSellingProduct,
-                Icons.trending_up,
+                "Articles vendus",
+                distinctProductsSold.toString(),
+                Icons.inventory_2,
                 successColor,
               ),
             ),
             const SizedBox(width: defaultPadding),
             Expanded(
               child: _metricCard(
-                "Ruptures",
+                "Rupture de stock",
                 outOfStockCount.toString(),
                 Icons.warning_amber_rounded,
                 warningColor,
@@ -122,48 +133,91 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-Widget _metricCard(String title, String value, IconData icon, Color color) {
+Widget _metricCard(
+  String title,
+  String value,
+  IconData icon,
+  Color color, {
+  bool isBlueGradient = false,
+}) {
   return Container(
     padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
     decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(7),
-      border: Border.all(color: Colors.grey[300]!),
+      gradient: isBlueGradient
+          ? const LinearGradient(
+              colors: [
+                Color(0xFF1565C0),
+                Color(0xFF0D47A1),
+              ],
+              begin: Alignment.centerLeft,
+              end: Alignment.centerRight,
+            )
+          : null,
+      color: isBlueGradient ? null : Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(
+        color: isBlueGradient
+            ? Colors.transparent
+            : Colors.grey[300]!,
+      ),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.08),
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
     ),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        // 👉 ICONE
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: isBlueGradient
+                ? Colors.white.withOpacity(0.18)
+                : color.withOpacity(0.1),
             shape: BoxShape.circle,
           ),
-          child: Icon(icon, color: color, size: 24),
+          child: Icon(
+            icon,
+            color: isBlueGradient ? Colors.white : color,
+            size: 24,
+          ),
         ),
+
         const SizedBox(width: 16),
+
+        // 👉 TEXTE
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 title.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.black87,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color:
+                      isBlueGradient ? Colors.white70 : Colors.black87,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.5,
                 ),
               ),
-              const SizedBox(height: 4),
+
+              const SizedBox(height: 6),
+
               Text(
                 value,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  fontSize: value.length > 10 ? 14 : 18,
+                  fontSize: value.length > 10 ? 14 : 20,
                   fontWeight: FontWeight.bold,
-                  color: color,
+                  color:
+                      isBlueGradient ? Colors.white : color,
                 ),
               ),
             ],
@@ -173,9 +227,8 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
     ),
   );
 }
-
-
-  Widget _cardWrapper(String title, double height, Widget child, {String? subtitle}) {
+  Widget _cardWrapper(String title, double height, Widget child,
+      {String? subtitle}) {
     return Container(
       height: height,
       padding: const EdgeInsets.all(defaultPadding),
@@ -244,172 +297,167 @@ Widget _metricCard(String title, String value, IconData icon, Color color) {
     );
   }
 
-Widget _buildBarChart() {
-  final maxYValue =
-      (monthlySales > totalExpenses ? monthlySales : totalExpenses);
-  final axisMax = maxYValue > 0 ? maxYValue * 1.4 : 100.0;
+  Widget _buildBarChart() {
+    final maxYValue =
+        [todaySales, monthlySales, yearlySales].reduce((a, b) => a > b ? a : b);
+    final axisMax = maxYValue > 0 ? maxYValue * 1.4 : 100.0;
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: axisMax,
 
-  return BarChart(
-    BarChartData(
-      alignment: BarChartAlignment.spaceAround,
-      maxY: axisMax,
-
-      // 👉 INTERACTION
-      barTouchData: BarTouchData(
-        enabled: true,
-        touchCallback: (event, response) {
-          if (event is FlTapUpEvent && response?.spot != null) {
-            final index = response!.spot!.touchedBarGroupIndex;
-            setState(() => _selectedBarIndex = index);
-            _executeBarAction(index);
-          }
-        },
-        touchTooltipData: BarTouchTooltipData(
-          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-            return BarTooltipItem(
-              NumberFormat.compact().format(rod.toY),
-              TextStyle(
-                color: darkBlue,
-                fontWeight: FontWeight.bold,
-                fontSize: 10,
-              ),
-            );
+        // 👉 INTERACTION
+        barTouchData: BarTouchData(
+          enabled: true,
+          touchCallback: (event, response) {
+            if (event is FlTapUpEvent && response?.spot != null) {
+              final index = response!.spot!.touchedBarGroupIndex;
+              setState(() => _selectedBarIndex = index);
+              _executeBarAction(index);
+            }
           },
-        ),
-      ),
-
-      // 👉 GROUPES
-      barGroups: [
-        _makeGroup(0, todaySales, darkBlue,
-            _selectedBarIndex == 0, axisMax),
-        _makeGroup(1, monthlySales, primaryYellow,
-            _selectedBarIndex == 1, axisMax),
-        _makeGroup(2, totalExpenses, accentRed,
-            _selectedBarIndex == 2, axisMax),
-      ],
-
-      // 👉 TITRES
-      titlesData: FlTitlesData(
-        leftTitles:
-            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        rightTitles:
-            const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-
-        // 🔥 MONTANTS EN HAUT
-        topTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 30,
-            getTitlesWidget: (value, meta) {
-              final idx = value.toInt();
-
-              double val = 0;
-              if (idx == 0) val = todaySales;
-              if (idx == 1) val = monthlySales;
-              if (idx == 2) val = totalExpenses;
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  NumberFormat.compact().format(val),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: idx == 2 ? accentRed : darkBlue,
-                  ),
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              return BarTooltipItem(
+                NumberFormat.compact().format(rod.toY),
+                TextStyle(
+                  color: darkBlue,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 10,
                 ),
               );
             },
           ),
         ),
 
-        // 👉 BAS (TES BOUTONS)
-        bottomTitles: AxisTitles(
-          sideTitles: SideTitles(
-            showTitles: true,
-            reservedSize: 50,
-            getTitlesWidget: (value, meta) {
-              const titles = ['Vte Jour', 'Vte Mois', 'Dépenses'];
-              const icons = [
-                Icons.today,
-                Icons.calendar_view_month,
-                Icons.account_balance_wallet
-              ];
+        // 👉 GROUPES
+        barGroups: [
+          _makeGroup(0, todaySales, darkBlue, _selectedBarIndex == 0, axisMax),
+          _makeGroup(
+              1, monthlySales, primaryYellow, _selectedBarIndex == 1, axisMax),
+          _makeGroup(
+              2, yearlySales, primaryOrange, _selectedBarIndex == 2, axisMax),
+        ],
 
-              final idx = value.toInt();
-              if (idx >= titles.length) return const SizedBox();
+        // 👉 TITRES
+        titlesData: FlTitlesData(
+          leftTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles:
+              const AxisTitles(sideTitles: SideTitles(showTitles: false)),
 
-              final isSelected = _selectedBarIndex == idx;
+          // 🔥 MONTANTS EN HAUT
+          topTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 30,
+              getTitlesWidget: (value, meta) {
+                final idx = value.toInt();
 
-              return GestureDetector(
-                onTap: () {
-                  setState(() => _selectedBarIndex = idx);
-                  _executeBarAction(idx);
-                },
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 12.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 250),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 9, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: isSelected ? darkBlue : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: isSelected
-                                ? darkBlue
-                                : Colors.grey[300]!,
+                double val = 0;
+                if (idx == 0) val = todaySales;
+                if (idx == 1) val = monthlySales;
+                if (idx == 2) val = yearlySales;
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Text(
+                    NumberFormat.compact().format(val),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: idx == 2 ? primaryOrange : darkBlue,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // 👉 BAS (TES BOUTONS)
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 50,
+              getTitlesWidget: (value, meta) {
+                const titles = ['Ce Jour', 'Ce Mois', 'Cette Année'];
+                const icons = [
+                  Icons.today,
+                  Icons.calendar_view_month,
+                  Icons.bar_chart
+                ];
+
+                final idx = value.toInt();
+                if (idx >= titles.length) return const SizedBox();
+
+                final isSelected = _selectedBarIndex == idx;
+
+                return GestureDetector(
+                  onTap: () {
+                    setState(() => _selectedBarIndex = idx);
+                    _executeBarAction(idx);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 12.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 250),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: isSelected ? darkBlue : Colors.white,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? darkBlue : Colors.grey[300]!,
+                            ),
+                            boxShadow: isSelected
+                                ? [
+                                    BoxShadow(
+                                      color: darkBlue.withOpacity(0.2),
+                                      blurRadius: 5,
+                                    )
+                                  ]
+                                : [],
                           ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: darkBlue.withOpacity(0.2),
-                                    blurRadius: 5,
-                                  )
-                                ]
-                              : [],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              icons[idx],
-                              size: 12,
-                              color: isSelected
-                                  ? primaryYellow
-                                  : Colors.grey,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              titles[idx],
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: isSelected
-                                    ? Colors.white
-                                    : Colors.black87,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                icons[idx],
+                                size: 12,
+                                color: isSelected ? primaryYellow : Colors.grey,
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 4),
+                              Text(
+                                titles[idx],
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
-      ),
 
-      gridData: const FlGridData(show: false),
-      borderData: FlBorderData(show: false),
-    ),
-  );
-}
+        gridData: const FlGridData(show: false),
+        borderData: FlBorderData(show: false),
+      ),
+    );
+  }
+
   BarChartGroupData _makeGroup(
       int x, double y, Color color, bool isTouched, double axisMax) {
     return BarChartGroupData(
@@ -423,7 +471,8 @@ Widget _buildBarChart() {
           backDrawRodData: BackgroundBarChartRodData(
             show: true,
             toY: axisMax,
-            color: isTouched ? color.withOpacity(0.05) : const Color(0xFFF1F5F9),
+            color:
+                isTouched ? color.withOpacity(0.05) : const Color(0xFFF1F5F9),
           ),
         ),
       ],
