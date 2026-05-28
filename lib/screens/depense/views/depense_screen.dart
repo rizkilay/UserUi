@@ -12,8 +12,26 @@ class DepenseScreen extends StatefulWidget {
   State<DepenseScreen> createState() => _DepenseScreenState();
 }
 
-class _DepenseScreenState extends State<DepenseScreen> {
+class _DepenseScreenState extends State<DepenseScreen>
+    with SingleTickerProviderStateMixin {
   final ExpenseDao _expenseDao = ExpenseDao();
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   void _showAddExpenseForm() {
     showModalBottomSheet(
@@ -34,20 +52,66 @@ class _DepenseScreenState extends State<DepenseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: SizedBox(
-        height: 45,
-        child: FloatingActionButton.extended(
-          onPressed: _showAddExpenseForm,
-          backgroundColor: const Color(0xFF3377B0),
-          icon: const Icon(Icons.add, color: Colors.white, size: 20),
-          label: const Text(
-            "Ajouter",
-            style: TextStyle(color: Colors.white, fontSize: 13),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, 50 * (1 - _animationController.value)),
+            child: Opacity(
+              opacity: _animationController.value,
+              child: child,
+            ),
+          );
+        },
+        child: Container(
+          height: 40,
+          width: MediaQuery.of(context).size.width < 350 ? 150 : 160,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+            ),
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF4A00E0).withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: _showAddExpenseForm,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.add, color: Colors.white, size: 20),
+                SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    "Ajouter",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
+      body: SingleChildScrollView(
           padding: const EdgeInsets.all(defaultPadding),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,7 +407,6 @@ class _DepenseScreenState extends State<DepenseScreen> {
             ],
           ),
         ),
-      ),
     );
   }
 

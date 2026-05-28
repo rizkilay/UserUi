@@ -94,8 +94,15 @@ class _EntryPointState extends State<EntryPoint> {
         },
         child: _pages[_currentIndex],
       ),
-      floatingActionButton: _currentIndex == 0
-          ? Container(
+      floatingActionButton: AnimatedSlide(
+        duration: const Duration(milliseconds: 300),
+        offset: _currentIndex == 0 ? Offset.zero : const Offset(0, 2),
+        child: AnimatedOpacity(
+          opacity: _currentIndex == 0 ? 1 : 0,
+          duration: const Duration(milliseconds: 300),
+          child: IgnorePointer(
+            ignoring: _currentIndex != 0,
+            child: Container(
               height: 40,
               width: MediaQuery.of(context).size.width < 350 ? 150 : 160,
               decoration: BoxDecoration(
@@ -142,9 +149,11 @@ class _EntryPointState extends State<EntryPoint> {
                   ],
                 ),
               ),
-            )
-          : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+            ),
+          ),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: Container(
         padding: const EdgeInsets.only(top: defaultPadding / 2),
         color: Theme.of(context).brightness == Brightness.light

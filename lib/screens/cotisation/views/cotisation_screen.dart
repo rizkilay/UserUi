@@ -13,8 +13,26 @@ class CotisationScreen extends StatefulWidget {
   State<CotisationScreen> createState() => _CotisationScreenState();
 }
 
-class _CotisationScreenState extends State<CotisationScreen> {
+class _CotisationScreenState extends State<CotisationScreen>
+    with SingleTickerProviderStateMixin {
   final CotisationDao _cotisationDao = CotisationDao();
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
 
   void _showAddCotisationForm() {
     showModalBottomSheet(
@@ -185,15 +203,62 @@ void _showStatus(BuildContext context, String message, {bool isError = false}) {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: SizedBox(
-        height: 45,
-        child: FloatingActionButton.extended(
-          onPressed: _showAddCotisationForm,
-          backgroundColor: const Color(0xFF3377B0),
-          icon: const Icon(Icons.add, color: Colors.white, size: 20),
-          label: const Text(
-            "Ajouter",
-            style: TextStyle(color: Colors.white, fontSize: 13),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return Transform.translate(
+            offset: Offset(0, 50 * (1 - _animationController.value)),
+            child: Opacity(
+              opacity: _animationController.value,
+              child: child,
+            ),
+          );
+        },
+        child: Container(
+          height: 40,
+          width: MediaQuery.of(context).size.width < 350 ? 150 : 160,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF8E2DE2), Color(0xFF4A00E0)],
+            ),
+            borderRadius: BorderRadius.circular(25),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF4A00E0).withOpacity(0.3),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+          ),
+          child: ElevatedButton(
+            onPressed: _showAddCotisationForm,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(25),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: const [
+                Icon(Icons.add, color: Colors.white, size: 20),
+                SizedBox(width: 6),
+                Flexible(
+                  child: Text(
+                    "Ajouter",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
