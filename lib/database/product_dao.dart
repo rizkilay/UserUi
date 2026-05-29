@@ -40,4 +40,13 @@ class ProductDao {
     final count = res.first['count'];
     return (count as int?) ?? 0;
   }
+
+  Future<List<ProductModel>> getOutOfStockProducts() async {
+    final db = await _dbHelper.database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'products',
+      where: 'quantity <= 0',
+    );
+    return maps.map((m) => ProductModel.fromJson(m)).toList();
+  }
 }

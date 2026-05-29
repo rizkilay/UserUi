@@ -230,6 +230,32 @@ class ExitDao {
     return int.tryParse(v.toString()) ?? 0;
   }
 
+  Future<List<Map<String, dynamic>>> getSoldProductsWithQty({String? startDate, String? endDate}) async {
+    final db = await DatabaseHelper.instance.database;
+    String query = '''
+      SELECT 
+        IFNULL(p.name, exit.name) as name,
+        IFNULL(p.category, 'Sans catégorie') as category,
+        SUM(exit.quantity) as total_qty
+      FROM stock_exits exit
+      LEFT JOIN products p ON p.id = exit.product_id
+    ''';
+    
+    List<dynamic> arguments = [];
+    if (startDate != null && endDate != null) {
+      query += ' WHERE exit.created_at BETWEEN ? AND ?';
+      arguments.add(startDate);
+      arguments.add(endDate);
+    }
+    
+    query += '''
+      GROUP BY exit.product_id, exit.name, p.category
+      ORDER BY total_qty DESC
+    ''';
+    
+    return await db.rawQuery(query, arguments);
+  }
+
   Future<List<StockExit>> getUnsynced() async {
     final db = await DatabaseHelper.instance.database;
     final res = await db.query('stock_exits', where: 'is_synced = 0');

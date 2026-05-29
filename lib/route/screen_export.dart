@@ -1,8 +1,6 @@
 export 'package:shop/route/route_constants.dart';
 export 'package:shop/screens/depense/views/depense_screen.dart';
-export 'package:shop/screens/discover/views/discover_screen.dart';
 export 'package:shop/screens/home/views/home_screen.dart';
-
 export 'package:shop/screens/search/views/search_screen.dart';
 export 'package:shop/screens/cotisation/views/cotisation_screen.dart';
 

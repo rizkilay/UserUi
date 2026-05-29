@@ -5,6 +5,7 @@ import 'package:shop/constants.dart';
 import 'package:shop/database/exit_dao.dart';
 import 'package:shop/database/product_dao.dart';
 import 'package:shop/database/expense_dao.dart';
+import 'package:shop/models/product_model.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -116,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 distinctProductsSold.toString(),
                 Icons.inventory_2,
                 successColor,
+                onTap: () => _showSoldProductsModal(context),
               ),
             ),
             const SizedBox(width: defaultPadding),
@@ -125,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 outOfStockCount.toString(),
                 Icons.warning_amber_rounded,
                 warningColor,
+                onTap: () => _showOutOfStockModal(context),
               ),
             ),
           ],
@@ -139,91 +142,96 @@ Widget _metricCard(
   IconData icon,
   Color color, {
   bool isBlueGradient = false,
+  VoidCallback? onTap,
 }) {
-  return Container(
-    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-    decoration: BoxDecoration(
-      gradient: isBlueGradient
-          ? const LinearGradient(
-              colors: [
-                Color(0xFF1565C0),
-                Color(0xFF0D47A1),
-              ],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            )
-          : null,
-      color: isBlueGradient ? null : Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      border: Border.all(
-        color: isBlueGradient
-            ? Colors.transparent
-            : Colors.grey[300]!,
+  return GestureDetector(
+    onTap: onTap,
+    behavior: HitTestBehavior.opaque,
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      decoration: BoxDecoration(
+        gradient: isBlueGradient
+            ? const LinearGradient(
+                colors: [
+                  Color(0xFF1565C0),
+                  Color(0xFF0D47A1),
+                ],
+                begin: Alignment.centerLeft,
+                end: Alignment.centerRight,
+              )
+            : null,
+        color: isBlueGradient ? null : Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isBlueGradient
+              ? Colors.transparent
+              : Colors.grey[300]!,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withOpacity(0.08),
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
-    ),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // 👉 ICONE
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isBlueGradient
-                ? Colors.white.withOpacity(0.18)
-                : color.withOpacity(0.1),
-            shape: BoxShape.circle,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // 👉 ICONE
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isBlueGradient
+                  ? Colors.white.withOpacity(0.18)
+                  : color.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              icon,
+              color: isBlueGradient ? Colors.white : color,
+              size: 24,
+            ),
           ),
-          child: Icon(
-            icon,
-            color: isBlueGradient ? Colors.white : color,
-            size: 24,
-          ),
-        ),
 
-        const SizedBox(width: 16),
+          const SizedBox(width: 16),
 
-        // 👉 TEXTE
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title.toUpperCase(),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color:
-                      isBlueGradient ? Colors.white70 : Colors.black87,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 0.5,
+          // 👉 TEXTE
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title.toUpperCase(),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color:
+                        isBlueGradient ? Colors.white70 : Colors.black87,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.5,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 6),
+                const SizedBox(height: 6),
 
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: value.length > 10 ? 14 : 20,
-                  fontWeight: FontWeight.bold,
-                  color:
-                      isBlueGradient ? Colors.white : color,
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: value.length > 10 ? 14 : 20,
+                    fontWeight: FontWeight.bold,
+                    color:
+                        isBlueGradient ? Colors.white : color,
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
@@ -480,11 +488,379 @@ Widget _metricCard(
   }
 
   void _executeBarAction(int index) {
-    if (index == 0 || index == 1) {
-      // In mobile, we just navigate to the Receipts or show a message
-      // If we are in EntryPoint, we might want to switch tabs
+    final today = DateTime.now();
+    String? start;
+    String? end;
+    String periodTitle = "";
+
+    if (index == 0) {
+      periodTitle = "Ce Jour";
+      start = DateTime(today.year, today.month, today.day).toIso8601String();
+      end = DateTime(today.year, today.month, today.day, 23, 59, 59).toIso8601String();
+    } else if (index == 1) {
+      periodTitle = "Ce Mois";
+      start = DateTime(today.year, today.month, 1).toIso8601String();
+      end = DateTime(today.year, today.month + 1, 0, 23, 59, 59).toIso8601String();
     } else if (index == 2) {
-      // Logic for expenses if needed
+      periodTitle = "Cette Année";
+      start = DateTime(today.year, 1, 1).toIso8601String();
+      end = DateTime(today.year + 1, 1, 0, 23, 59, 59).toIso8601String();
+    } else {
+      return;
     }
+
+    _showSoldProductsModal(context, periodTitle: periodTitle, startDate: start, endDate: end);
+  }
+
+  void _showSoldProductsModal(BuildContext context, {String? periodTitle, String? startDate, String? endDate}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  // Title
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: successColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.inventory_2, color: successColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            periodTitle != null
+                                ? "Articles vendus ($periodTitle)"
+                                : "Articles vendus",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: darkBlue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: FutureBuilder<List<Map<String, dynamic>>>(
+                      future: _exitDao.getSoldProductsWithQty(startDate: startDate, endDate: endDate),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError) {
+                          return Center(child: Text("Erreur: ${snapshot.error}"));
+                        }
+                        final items = snapshot.data ?? [];
+                        if (items.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.shopping_bag_outlined, size: 64, color: Colors.grey[400]),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "Aucune vente enregistrée",
+                                  style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(20),
+                          itemCount: items.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            final name = item['name'] as String? ?? 'Inconnu';
+                            final category = item['category'] as String? ?? 'Sans catégorie';
+                            final qty = item['total_qty'] as num? ?? 0;
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.grey[200]!),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.02),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[50],
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(Icons.shopping_basket_outlined, color: darkBlue, size: 20),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          name,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          category,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: successColor.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      "$qty vendus",
+                                      style: const TextStyle(
+                                        color: successColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showOutOfStockModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 12),
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                  ),
+                  // Title
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: warningColor.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.warning_amber_rounded, color: warningColor, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            "Produits en rupture de stock",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: darkBlue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Divider(),
+                  Expanded(
+                    child: FutureBuilder<List<ProductModel>>(
+                      future: _productDao.getOutOfStockProducts(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+                        if (snapshot.hasError) {
+                          return Center(child: Text("Erreur: ${snapshot.error}"));
+                        }
+                        final items = snapshot.data ?? [];
+                        if (items.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.check_circle_outline_rounded, size: 64, color: successColor),
+                                const SizedBox(height: 16),
+                                Text(
+                                  "Aucun produit en rupture !",
+                                  style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return ListView.separated(
+                          controller: scrollController,
+                          padding: const EdgeInsets.all(20),
+                          itemCount: items.length,
+                          separatorBuilder: (context, index) => const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final item = items[index];
+                            final name = item.title;
+                            final category = item.category ?? 'Sans catégorie';
+                            final qty = item.quantity ?? 0;
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.grey[200]!),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.02),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: accentRed.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(Icons.warning_amber_rounded, color: accentRed, size: 20),
+                                  ),
+                                  const SizedBox(width: 14),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          name,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          category,
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: accentRed.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      "Stock: $qty",
+                                      style: TextStyle(
+                                        color: accentRed,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 }

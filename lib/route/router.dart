@@ -10,13 +10,9 @@ Route<dynamic> generateRoute(RouteSettings settings) {
       return MaterialPageRoute(
         builder: (context) => const HomeScreen(),
       );
-    case discoverScreenRoute:
-      return MaterialPageRoute(
-        builder: (context) => const DiscoverScreen(),
-      );
     case searchScreenRoute:
       return MaterialPageRoute(
-        builder: (context) => const SearchScreen(),
+        builder: (context) => const OrdersScreen(),
       );
     case depenseScreenRoute:
       return MaterialPageRoute(
