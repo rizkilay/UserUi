@@ -560,15 +560,13 @@ Widget _metricCard(
                         Expanded(
                           child: Text(
                             periodTitle != null
-                                ? "Articles vendus ($periodTitle)"
-                                : "Articles vendus",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: darkBlue,
+                               ? "Articles vendus ($periodTitle)"
+                               : "Articles vendus",
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            color: darkBlue,
                             ),
                           ),
-                        ),
+                        )
                       ],
                     ),
                   ),
@@ -593,7 +591,9 @@ Widget _metricCard(
                                 const SizedBox(height: 16),
                                 Text(
                                   "Aucune vente enregistrée",
-                                  style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.bold),
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                                 ),
                               ],
                             ),
@@ -737,9 +737,7 @@ Widget _metricCard(
                         Expanded(
                           child: Text(
                             "Produits en rupture de stock",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
                               color: darkBlue,
                             ),
                           ),
@@ -768,7 +766,9 @@ Widget _metricCard(
                                 const SizedBox(height: 16),
                                 Text(
                                   "Aucun produit en rupture !",
-                                  style: TextStyle(fontSize: 16, color: Colors.grey[600], fontWeight: FontWeight.bold),
+                                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: Colors.grey[600],
+                                  ),
                                 ),
                               ],
                             ),
