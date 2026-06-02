@@ -147,4 +147,23 @@ class DatabaseHelper {
       )
     ''');
   }
+
+  Future<void> clearAllData() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete('products');
+      await txn.delete('expenses');
+      await txn.delete('cotisations');
+      await txn.delete('cotisation_withdrawals');
+      await txn.delete('stock_exits');
+      await txn.delete('partners');
+      // Delete metadata keys except boutique_code and boutique_name
+      await txn.delete(
+        'sync_metadata',
+        where: 'key NOT IN (?, ?)',
+        whereArgs: ['boutique_code', 'boutique_name'],
+      );
+    });
+  }
 }
+

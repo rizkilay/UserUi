@@ -3,6 +3,11 @@ import 'package:flutter/services.dart'; // Pour masquer la barre d'état (option
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../../constants.dart'; // Assurez-vous que ce chemin est correct
 import '../../../services/sync_service.dart'; // Assurez-vous que ce chemin est correct
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import '../../../database/sync_metadata_dao.dart';
+import '../../../database/database_helper.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -13,6 +18,120 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   bool _isSyncing = false;
+  String? _boutiqueName;
+  String? _boutiqueCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBoutiqueInfo();
+  }
+
+  Future<void> _loadBoutiqueInfo() async {
+    final metadataDao = SyncMetadataDao();
+    final code = await metadataDao.getValue('boutique_code');
+    final name = await metadataDao.getValue('boutique_name');
+    if (mounted) {
+      setState(() {
+        _boutiqueCode = code;
+        _boutiqueName = name;
+      });
+    }
+  }
+
+  Future<void> _showCodeDialog() async {
+    final controller = TextEditingController(text: _boutiqueCode);
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Code Boutique"),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: "Entrez le code boutique (ex: BTQ-XXXX)",
+              labelText: "Code Boutique",
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Annuler"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final code = controller.text.trim().toUpperCase();
+                if (code.isEmpty) return;
+                
+                Navigator.pop(context);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("Vérification du code...")),
+                );
+                
+                try {
+                  final response = await http.get(Uri.parse('https://backend-boutique.vercel.app/api/boutique-info?code=$code'));
+                  if (response.statusCode == 200) {
+                    final data = jsonDecode(response.body);
+                    final name = data['name'] ?? 'Boutique';
+                    
+                    final metadataDao = SyncMetadataDao();
+                    
+                    // 1. Sync old boutique data before switching if a code exists
+                    final currentCode = await metadataDao.getValue('boutique_code');
+                    if (currentCode != null && currentCode.isNotEmpty && currentCode != code) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Synchronisation de l'ancienne boutique...")),
+                        );
+                      }
+                      try {
+                        await SyncService.instance.syncAll();
+                      } catch (e) {
+                        debugPrint("Error syncing old boutique data: $e");
+                      }
+                    }
+
+                    // 2. Clear all local data of the previous boutique
+                    await DatabaseHelper.instance.clearAllData();
+                    
+                    // 3. Save new boutique info
+                    await metadataDao.setValue('boutique_code', code);
+                    await metadataDao.setValue('boutique_name', name);
+                    
+                    setState(() {
+                      _boutiqueCode = code;
+                      _boutiqueName = name;
+                    });
+                    
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("Boutique '$name' connectée !"), backgroundColor: Colors.green),
+                      );
+                    }
+                    
+                    // Trigger sync automatically to load new boutique data
+                    _handleSync();
+                  } else {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Code boutique invalide."), backgroundColor: Colors.red),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("Erreur de connexion : $e"), backgroundColor: Colors.red),
+                  );
+                }
+              },
+              child: const Text("Valider"),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   Future<void> _handleSync() async {
     setState(() => _isSyncing = true);
@@ -115,12 +234,12 @@ Widget _buildUpgradeCard() {
                 ),
               ),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  "ICI LE NOM DE L'ENTREPRISE",
+                  _boutiqueName != null ? "$_boutiqueName (${_boutiqueCode})" : "SÉLECTIONNER UNE BOUTIQUE",
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 13,
                   ),
@@ -131,7 +250,7 @@ Widget _buildUpgradeCard() {
         ),
         const SizedBox(width: 8),
         ElevatedButton(
-          onPressed: () {},
+          onPressed: _showCodeDialog,
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF1A73E8),
             foregroundColor: Colors.white,

@@ -26,9 +26,18 @@ class SyncService {
   /// Fetches products from the backend incrementally and stores them locally.
   Future<List<ProductModel>> fetchAndSyncProducts() async {
     try {
+      final String? boutiqueCode = await _metadataDao.getValue('boutique_code');
+      if (boutiqueCode == null || boutiqueCode.isEmpty) {
+        debugPrint('SyncService: No boutique_code configured, skipping pull');
+        return await _loadLocal();
+      }
+
       final String? lastSync = await _metadataDao.getValue('last_products_sync');
       final uri = Uri.parse('$_baseUrl/api/products').replace(
-        queryParameters: lastSync != null ? {'since': lastSync} : null,
+        queryParameters: {
+          'boutique_code': boutiqueCode,
+          if (lastSync != null && lastSync.isNotEmpty) 'since': lastSync,
+        },
       );
 
       final response = await http.get(uri).timeout(const Duration(seconds: 15));
@@ -109,6 +118,12 @@ class SyncService {
   /// Pushes all unsynced local data to the backend and pulls products.
   Future<bool> syncAll() async {
     try {
+      final String? boutiqueCode = await _metadataDao.getValue('boutique_code');
+      if (boutiqueCode == null || boutiqueCode.isEmpty) {
+        debugPrint('SyncService: No boutique_code configured, skipping syncAll');
+        return false;
+      }
+
       bool success = true;
 
       // 1. Push Sales (Exits)
@@ -116,7 +131,9 @@ class SyncService {
       if (unsyncedExits.isNotEmpty) {
         final pushTime = DateTime.now().toIso8601String();
         final res = await http.post(
-          Uri.parse('$_baseUrl/api/sync-exits'),
+          Uri.parse('$_baseUrl/api/sync-exits').replace(
+            queryParameters: {'boutique_code': boutiqueCode},
+          ),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(unsyncedExits.map((e) {
             var map = e.toMap();
@@ -138,7 +155,9 @@ class SyncService {
       final unsyncedExpenses = await _expenseDao.getUnsynced();
       if (unsyncedExpenses.isNotEmpty) {
         final res = await http.post(
-          Uri.parse('$_baseUrl/api/sync-expenses'),
+          Uri.parse('$_baseUrl/api/sync-expenses').replace(
+            queryParameters: {'boutique_code': boutiqueCode},
+          ),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(unsyncedExpenses.map((e) => e.toMap()).toList()),
         );
@@ -153,7 +172,9 @@ class SyncService {
       final unsyncedCotisations = await _cotisationDao.getUnsynced();
       if (unsyncedCotisations.isNotEmpty) {
         final res = await http.post(
-          Uri.parse('$_baseUrl/api/sync-cotisations'),
+          Uri.parse('$_baseUrl/api/sync-cotisations').replace(
+            queryParameters: {'boutique_code': boutiqueCode},
+          ),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(unsyncedCotisations.map((c) => c.toMap()).toList()),
         );
